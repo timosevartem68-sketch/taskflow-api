@@ -1,8 +1,13 @@
 from fastapi import FastAPI
 
-app = FastAPI(title="TaskFlow API")
+from app.core.config import settings
+
+app = FastAPI(title=settings.app_name)
 
 
 @app.get("/health")
 async def health_check():
-    return {"status": "ok"}
+    return {
+        "status": "ok",
+        "environment": settings.environment,
+    }
