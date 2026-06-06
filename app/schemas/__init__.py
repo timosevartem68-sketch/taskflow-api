@@ -7,7 +7,7 @@ from app.schemas.task import (
     TaskStatusUpdate,
     TaskUpdate,
 )
-from app.schemas.user import UserCreate, UserRead, UserUpdate
+from app.schemas.user import TokenRead, UserCreate, UserLogin, UserRead, UserUpdate
 from app.schemas.workspace import (
     WorkspaceCreate,
     WorkspaceMemberAdd,
@@ -37,4 +37,7 @@ __all__ = [
     "WorkspaceMemberUpdate",
     "WorkspaceRead",
     "WorkspaceUpdate",
+    "TokenRead",
+    "UserLogin",
+    "TokenRead"
 ]
