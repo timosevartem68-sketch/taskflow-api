@@ -102,7 +102,7 @@ class TaskService:
         self,
         *,
         current_user: User,
-        project_id: int | None = None,
+        project_id: int,
         status=None,
         priority=None,
         assignee_id: int | None = None,
@@ -113,13 +113,13 @@ class TaskService:
         sort_by="id",
         sort_order="asc",
     ) -> Page[TaskRead]:
-        if project_id is not None:
-            project = await self._get_project_or_raise(project_id)
 
-            await self._get_member_role_or_raise(
-                workspace_id=project.workspace_id,
-                current_user=current_user,
-            )
+        project = await self._get_project_or_raise(project_id)
+
+        await self._get_member_role_or_raise(
+            workspace_id=project.workspace_id,
+            current_user=current_user,
+        )
 
         items, total = await self.task_repository.list(
             project_id=project_id,

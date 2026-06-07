@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
-
+from typing import Annotated
 from app.api.deps import get_current_user
 from app.db.session import get_db
 from app.models.task import TaskPriority, TaskStatus
@@ -52,7 +52,7 @@ async def create_task(
     response_model=Page[TaskRead],
 )
 async def list_tasks(
-    project_id: int | None = Query(default=None, ge=1),
+    project_id: Annotated[int, Query(ge=1)],
     task_status: TaskStatus | None = Query(default=None, alias="status"),
     priority: TaskPriority | None = None,
     assignee_id: int | None = Query(default=None, ge=1),
