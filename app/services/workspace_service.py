@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-
+from app.core.permissions import ensure_role_allowed
 from app.models.user import User
 from app.models.workspace import Workspace
 from app.models.workspace_member import WorkspaceMember, WorkspaceRole
@@ -77,8 +77,14 @@ class WorkspaceService:
         if member is None:
             raise PermissionError("You do not have access to this workspace")
 
-        if member.role not in {WorkspaceRole.OWNER, WorkspaceRole.ADMIN}:
-            raise PermissionError("You do not have permission to update this workspace")
+        ensure_role_allowed(
+            role=member.role,
+            allowed_roles={
+                WorkspaceRole.OWNER,
+                WorkspaceRole.ADMIN,
+            },
+            error_message="You do not have permission to update this workspace",
+        )
 
         workspace = await self.workspace_repository.get_by_id(workspace_id)
 
@@ -108,8 +114,14 @@ class WorkspaceService:
         if current_member is None:
             raise PermissionError("You do not have access to this workspace")
 
-        if current_member.role not in {WorkspaceRole.OWNER, WorkspaceRole.ADMIN}:
-            raise PermissionError("You do not have permission to add members")
+        ensure_role_allowed(
+            role=current_member.role,
+            allowed_roles={
+                WorkspaceRole.OWNER,
+                WorkspaceRole.ADMIN,
+            },
+            error_message="You do not have permission to add members",
+        )
 
         workspace = await self.workspace_repository.get_by_id(workspace_id)
 
