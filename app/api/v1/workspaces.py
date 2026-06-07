@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-
+from app.core.exceptions import ConflictError, NotFoundError, PermissionDeniedError
 from app.api.deps import get_current_user
 from app.db.session import get_db
 from app.models.user import User
@@ -59,12 +59,12 @@ async def get_workspace(
             workspace_id=workspace_id,
             current_user=current_user,
         )
-    except LookupError as exc:
+    except NotFoundError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(exc),
         ) from exc
-    except PermissionError as exc:
+    except PermissionDeniedError as exc:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=str(exc),
@@ -89,12 +89,12 @@ async def update_workspace(
             workspace_data=workspace_data,
             current_user=current_user,
         )
-    except LookupError as exc:
+    except NotFoundError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(exc),
         ) from exc
-    except PermissionError as exc:
+    except PermissionDeniedError as exc:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=str(exc),
