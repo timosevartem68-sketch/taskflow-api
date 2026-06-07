@@ -1,3 +1,4 @@
+from app.core.permissions import ensure_role_allowed
 from app.models.project import Project
 from app.models.task import Task
 from app.models.user import User
@@ -56,18 +57,26 @@ class TaskService:
 
     @staticmethod
     def _ensure_can_write_tasks(role: WorkspaceRole) -> None:
-        if role not in {
-            WorkspaceRole.OWNER,
-            WorkspaceRole.ADMIN,
-            WorkspaceRole.MEMBER,
-        }:
-            raise PermissionError("You do not have permission to write tasks")
+        ensure_role_allowed(
+            role=role,
+            allowed_roles={
+                WorkspaceRole.OWNER,
+                WorkspaceRole.ADMIN,
+                WorkspaceRole.MEMBER,
+            },
+            error_message="You do not have permission to write tasks",
+        )
 
     @staticmethod
     def _ensure_can_delete_tasks(role: WorkspaceRole) -> None:
-        if role not in {WorkspaceRole.OWNER, WorkspaceRole.ADMIN}:
-            raise PermissionError("You do not have permission to delete tasks")
-
+        ensure_role_allowed(
+            role=role,
+            allowed_roles={
+                WorkspaceRole.OWNER,
+                WorkspaceRole.ADMIN,
+            },
+            error_message="You do not have permission to delete tasks",
+        )
     async def create_task(
         self,
         *,
