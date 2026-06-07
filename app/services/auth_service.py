@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-
+from app.core.exceptions import AuthenticationError, ConflictError
 from app.core.security import create_access_token, hash_password, verify_password
 from app.models.user import User
 from app.repositories.user_repository import UserRepository
@@ -15,7 +15,7 @@ class AuthService:
         existing_user = await self.user_repository.get_by_email(user_data.email)
 
         if existing_user is not None:
-            raise ValueError("User with this email already exists")
+            raise ConflictError("Пользователь с таким email уже существует")
 
         hashed_password = hash_password(user_data.password)
 
@@ -30,17 +30,17 @@ class AuthService:
 
         return user
 
-    async def authenticate(self, email: str, password: str) -> User | None:
+    async def authenticate(self, email: str, password: str) -> User:
         user = await self.user_repository.get_by_email(email)
 
         if user is None:
-            return None
+            raise AuthenticationError("Неверный email или пароль")
 
         if not verify_password(password, user.hashed_password):
-            return None
+            raise AuthenticationError("Неверный email или пароль")
 
         if not user.is_active:
-            return None
+            raise AuthenticationError("Пользователь неактивен")
 
         return user
 
