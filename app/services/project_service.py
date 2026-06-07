@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-
+from app.core.permissions import ensure_role_allowed
 from app.models.project import Project
 from app.models.user import User
 from app.models.workspace_member import WorkspaceRole
@@ -28,12 +28,15 @@ class ProjectService:
         if member is None:
             raise PermissionError("You do not have access to this workspace")
 
-        if member.role not in {
-            WorkspaceRole.OWNER,
-            WorkspaceRole.ADMIN,
-            WorkspaceRole.MEMBER,
-        }:
-            raise PermissionError("You do not have permission to create projects")
+        ensure_role_allowed(
+            role=member.role,
+            allowed_roles={
+                WorkspaceRole.OWNER,
+                WorkspaceRole.ADMIN,
+                WorkspaceRole.MEMBER,
+            },
+            error_message="You do not have permission to create projects",
+        )
 
         project = await self.project_repository.create(
             workspace_id=project_data.workspace_id,
@@ -103,12 +106,15 @@ class ProjectService:
         if member is None:
             raise PermissionError("You do not have access to this project")
 
-        if member.role not in {
-            WorkspaceRole.OWNER,
-            WorkspaceRole.ADMIN,
-            WorkspaceRole.MEMBER,
-        }:
-            raise PermissionError("You do not have permission to update projects")
+        ensure_role_allowed(
+        role=member.role,
+        allowed_roles={
+        WorkspaceRole.OWNER,
+        WorkspaceRole.ADMIN,
+        WorkspaceRole.MEMBER,
+        },
+        error_message="You do not have permission to update projects",
+)
 
         project = await self.project_repository.update(
             project,
@@ -140,8 +146,14 @@ class ProjectService:
         if member is None:
             raise PermissionError("You do not have access to this project")
 
-        if member.role not in {WorkspaceRole.OWNER, WorkspaceRole.ADMIN}:
-            raise PermissionError("You do not have permission to delete projects")
+        ensure_role_allowed(
+        role=member.role,
+        allowed_roles={
+        WorkspaceRole.OWNER,
+        WorkspaceRole.ADMIN,
+        },
+        error_message="You do not have permission to delete projects",
+    )
 
         await self.project_repository.delete(project)
 
