@@ -152,7 +152,7 @@ class ProjectService:
         WorkspaceRole.OWNER,
         WorkspaceRole.ADMIN,
         },
-        error_message="You do not have permission to delete projects",
+        error_message="У вас нет прав",
     )
 
         await self.project_repository.delete(project)
