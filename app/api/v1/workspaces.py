@@ -1,11 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.core.exceptions import ConflictError, NotFoundError, PermissionDeniedError
+
 from app.api.deps import get_current_user
 from app.db.session import get_db
 from app.models.user import User
 from app.schemas.workspace import WorkspaceCreate, WorkspaceRead, WorkspaceUpdate
 from app.services.workspace_service import WorkspaceService
+
 
 router = APIRouter(prefix="/workspaces", tags=["workspaces"])
 
@@ -54,21 +55,10 @@ async def get_workspace(
 ):
     workspace_service = WorkspaceService(db)
 
-    try:
-        return await workspace_service.get_workspace_for_user(
-            workspace_id=workspace_id,
-            current_user=current_user,
-        )
-    except NotFoundError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(exc),
-        ) from exc
-    except PermissionDeniedError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=str(exc),
-        ) from exc
+    return await workspace_service.get_workspace_for_user(
+        workspace_id=workspace_id,
+        current_user=current_user,
+    )
 
 
 @router.patch(
@@ -83,19 +73,8 @@ async def update_workspace(
 ):
     workspace_service = WorkspaceService(db)
 
-    try:
-        return await workspace_service.update_workspace(
-            workspace_id=workspace_id,
-            workspace_data=workspace_data,
-            current_user=current_user,
-        )
-    except NotFoundError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(exc),
-        ) from exc
-    except PermissionDeniedError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=str(exc),
-        ) from exc
+    return await workspace_service.update_workspace(
+        workspace_id=workspace_id,
+        workspace_data=workspace_data,
+        current_user=current_user,
+    )

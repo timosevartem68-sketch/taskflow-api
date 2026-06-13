@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy.ext.asyncio import AsyncSession
-from app.core.exceptions import NotFoundError, PermissionDeniedError
 from typing import Annotated
+
+from fastapi import APIRouter, Depends, Query, status
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.api.deps import get_current_user
 from app.db.session import get_db
 from app.models.task import TaskPriority, TaskStatus
@@ -15,6 +16,7 @@ from app.schemas.task import (
     TaskUpdate,
 )
 from app.services.task_service import TaskService
+
 
 router = APIRouter(prefix="/tasks", tags=["tasks"])
 
@@ -31,21 +33,10 @@ async def create_task(
 ):
     task_service = TaskService(db)
 
-    try:
-        return await task_service.create_task(
-            task_data=task_data,
-            current_user=current_user,
-        )
-    except NotFoundError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(exc),
-        ) from exc
-    except PermissionDeniedError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=str(exc),
-        ) from exc
+    return await task_service.create_task(
+        task_data=task_data,
+        current_user=current_user,
+    )
 
 
 @router.get(
@@ -68,30 +59,19 @@ async def list_tasks(
 ):
     task_service = TaskService(db)
 
-    try:
-        return await task_service.list_tasks(
-            current_user=current_user,
-            project_id=project_id,
-            status=task_status,
-            priority=priority,
-            assignee_id=assignee_id,
-            created_by_id=created_by_id,
-            search=search,
-            limit=limit,
-            offset=offset,
-            sort_by=sort_by,
-            sort_order=sort_order,
-        )
-    except NotFoundError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(exc),
-        ) from exc
-    except PermissionDeniedError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=str(exc),
-        ) from exc
+    return await task_service.list_tasks(
+        current_user=current_user,
+        project_id=project_id,
+        status=task_status,
+        priority=priority,
+        assignee_id=assignee_id,
+        created_by_id=created_by_id,
+        search=search,
+        limit=limit,
+        offset=offset,
+        sort_by=sort_by,
+        sort_order=sort_order,
+    )
 
 
 @router.get(
@@ -105,21 +85,10 @@ async def get_task(
 ):
     task_service = TaskService(db)
 
-    try:
-        return await task_service.get_task(
-            task_id=task_id,
-            current_user=current_user,
-        )
-    except NotFoundError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(exc),
-        ) from exc
-    except PermissionDeniedError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=str(exc),
-        ) from exc
+    return await task_service.get_task(
+        task_id=task_id,
+        current_user=current_user,
+    )
 
 
 @router.patch(
@@ -134,22 +103,11 @@ async def update_task(
 ):
     task_service = TaskService(db)
 
-    try:
-        return await task_service.update_task(
-            task_id=task_id,
-            task_data=task_data,
-            current_user=current_user,
-        )
-    except NotFoundError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(exc),
-        ) from exc
-    except PermissionDeniedError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=str(exc),
-        ) from exc
+    return await task_service.update_task(
+        task_id=task_id,
+        task_data=task_data,
+        current_user=current_user,
+    )
 
 
 @router.delete(
@@ -163,21 +121,10 @@ async def delete_task(
 ):
     task_service = TaskService(db)
 
-    try:
-        await task_service.delete_task(
-            task_id=task_id,
-            current_user=current_user,
-        )
-    except NotFoundError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(exc),
-        ) from exc
-    except PermissionDeniedError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=str(exc),
-        ) from exc
+    await task_service.delete_task(
+        task_id=task_id,
+        current_user=current_user,
+    )
 
 
 @router.patch(
@@ -192,22 +139,11 @@ async def update_task_status(
 ):
     task_service = TaskService(db)
 
-    try:
-        return await task_service.update_task_status(
-            task_id=task_id,
-            status_data=status_data,
-            current_user=current_user,
-        )
-    except NotFoundError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(exc),
-        ) from exc
-    except PermissionDeniedError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=str(exc),
-        ) from exc
+    return await task_service.update_task_status(
+        task_id=task_id,
+        status_data=status_data,
+        current_user=current_user,
+    )
 
 
 @router.patch(
@@ -222,19 +158,8 @@ async def update_task_assignee(
 ):
     task_service = TaskService(db)
 
-    try:
-        return await task_service.update_task_assignee(
-            task_id=task_id,
-            assignee_data=assignee_data,
-            current_user=current_user,
-        )
-    except NotFoundError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(exc),
-        ) from exc
-    except PermissionDeniedError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=str(exc),
-        ) from exc
+    return await task_service.update_task_assignee(
+        task_id=task_id,
+        assignee_data=assignee_data,
+        current_user=current_user,
+    )
