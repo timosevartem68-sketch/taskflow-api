@@ -1,12 +1,7 @@
-from fastapi.testclient import TestClient
-
 from app.main import app
 
 
-client = TestClient(app)
-
-
-def test_openapi_schema_is_available():
+def test_openapi_schema_is_available(client):
     response = client.get("/openapi.json")
 
     assert response.status_code == 200
@@ -18,7 +13,7 @@ def test_openapi_schema_is_available():
     assert data["info"]["title"] == app.title
 
 
-def test_health_check_is_available():
+def test_health_check_is_available(client):
     response = client.get("/health")
 
     assert response.status_code == 200
