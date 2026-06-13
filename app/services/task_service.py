@@ -1,3 +1,6 @@
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.exceptions import NotFoundError, PermissionDeniedError
 from app.core.permissions import ensure_role_allowed
 from app.models.project import Project
 from app.models.task import Task
@@ -17,7 +20,7 @@ from app.schemas.task import (
 
 
 class TaskService:
-    def __init__(self, db):
+    def __init__(self, db: AsyncSession):
         self.db = db
         self.task_repository = TaskRepository(db)
         self.project_repository = ProjectRepository(db)
@@ -27,7 +30,7 @@ class TaskService:
         project = await self.project_repository.get_by_id(project_id)
 
         if project is None:
-            raise LookupError("Project not found")
+            raise NotFoundError("Проект не найден")
 
         return project
 
@@ -35,7 +38,7 @@ class TaskService:
         task = await self.task_repository.get_by_id(task_id)
 
         if task is None:
-            raise LookupError("Task not found")
+            raise NotFoundError("Задача не найдена")
 
         return task
 
@@ -51,7 +54,7 @@ class TaskService:
         )
 
         if member is None:
-            raise PermissionError("You do not have access to this workspace")
+            raise PermissionDeniedError("У вас нет доступа к этому проекту")
 
         return member.role
 
@@ -64,7 +67,7 @@ class TaskService:
                 WorkspaceRole.ADMIN,
                 WorkspaceRole.MEMBER,
             },
-            error_message="You do not have permission to write tasks",
+            error_message="У вас нет прав на создание или изменение задач",
         )
 
     @staticmethod
@@ -75,8 +78,9 @@ class TaskService:
                 WorkspaceRole.OWNER,
                 WorkspaceRole.ADMIN,
             },
-            error_message="You do not have permission to delete tasks",
+            error_message="У вас нет прав на удаление этой задачи",
         )
+
     async def create_task(
         self,
         *,
@@ -119,10 +123,9 @@ class TaskService:
         search: str | None = None,
         limit: int = 20,
         offset: int = 0,
-        sort_by="id",
-        sort_order="asc",
+        sort_by: str = "id",
+        sort_order: str = "asc",
     ) -> Page[TaskRead]:
-
         project = await self._get_project_or_raise(project_id)
 
         await self._get_member_role_or_raise(

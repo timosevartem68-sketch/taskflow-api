@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.core.exceptions import NotFoundError, PermissionDeniedError
 from typing import Annotated
 from app.api.deps import get_current_user
 from app.db.session import get_db
@@ -35,12 +36,12 @@ async def create_task(
             task_data=task_data,
             current_user=current_user,
         )
-    except LookupError as exc:
+    except NotFoundError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(exc),
         ) from exc
-    except PermissionError as exc:
+    except PermissionDeniedError as exc:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=str(exc),
@@ -81,12 +82,12 @@ async def list_tasks(
             sort_by=sort_by,
             sort_order=sort_order,
         )
-    except LookupError as exc:
+    except NotFoundError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(exc),
         ) from exc
-    except PermissionError as exc:
+    except PermissionDeniedError as exc:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=str(exc),
@@ -109,12 +110,12 @@ async def get_task(
             task_id=task_id,
             current_user=current_user,
         )
-    except LookupError as exc:
+    except NotFoundError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(exc),
         ) from exc
-    except PermissionError as exc:
+    except PermissionDeniedError as exc:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=str(exc),
@@ -139,12 +140,12 @@ async def update_task(
             task_data=task_data,
             current_user=current_user,
         )
-    except LookupError as exc:
+    except NotFoundError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(exc),
         ) from exc
-    except PermissionError as exc:
+    except PermissionDeniedError as exc:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=str(exc),
@@ -167,12 +168,12 @@ async def delete_task(
             task_id=task_id,
             current_user=current_user,
         )
-    except LookupError as exc:
+    except NotFoundError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(exc),
         ) from exc
-    except PermissionError as exc:
+    except PermissionDeniedError as exc:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=str(exc),
@@ -197,12 +198,12 @@ async def update_task_status(
             status_data=status_data,
             current_user=current_user,
         )
-    except LookupError as exc:
+    except NotFoundError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(exc),
         ) from exc
-    except PermissionError as exc:
+    except PermissionDeniedError as exc:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=str(exc),
@@ -227,12 +228,12 @@ async def update_task_assignee(
             assignee_data=assignee_data,
             current_user=current_user,
         )
-    except LookupError as exc:
+    except NotFoundError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(exc),
         ) from exc
-    except PermissionError as exc:
+    except PermissionDeniedError as exc:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=str(exc),
