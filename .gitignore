@@ -3,3 +3,4 @@ __pycache__/
 *.pyc
 test_taskflow.db
 test_taskflow.db-journal
+.idea/
