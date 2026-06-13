@@ -6,7 +6,7 @@ from app.models.workspace_member import WorkspaceRole
 from app.repositories.project_repository import ProjectRepository
 from app.repositories.workspace_repository import WorkspaceRepository
 from app.schemas.project import ProjectCreate, ProjectUpdate
-
+from app.core.exceptions import NotFoundError, PermissionDeniedError
 
 class ProjectService:
     def __init__(self, db: AsyncSession):
@@ -26,7 +26,7 @@ class ProjectService:
         )
 
         if member is None:
-            raise PermissionError("You do not have access to this workspace")
+            raise PermissionDeniedError("У вас нет доступа к этому рабочему пространству")
 
         ensure_role_allowed(
             role=member.role,
@@ -35,7 +35,7 @@ class ProjectService:
                 WorkspaceRole.ADMIN,
                 WorkspaceRole.MEMBER,
             },
-            error_message="You do not have permission to create projects",
+            error_message="У вас нет прав на создание проектов",
         )
 
         project = await self.project_repository.create(
@@ -61,7 +61,7 @@ class ProjectService:
         )
 
         if member is None:
-            raise PermissionError("You do not have access to this workspace")
+            raise PermissionDeniedError("У вас нет доступа к этому рабочему пространству")
 
         return await self.project_repository.list_by_workspace(workspace_id)
 
@@ -74,7 +74,7 @@ class ProjectService:
         project = await self.project_repository.get_by_id(project_id)
 
         if project is None:
-            raise LookupError("Project not found")
+            raise NotFoundError("Проект не найден")
 
         member = await self.workspace_repository.get_member(
             workspace_id=project.workspace_id,
@@ -82,7 +82,7 @@ class ProjectService:
         )
 
         if member is None:
-            raise PermissionError("You do not have access to this project")
+            raise PermissionDeniedError("У вас нет доступа к этому проекту")
 
         return project
 
@@ -96,7 +96,7 @@ class ProjectService:
         project = await self.project_repository.get_by_id(project_id)
 
         if project is None:
-            raise LookupError("Project not found")
+            raise NotFoundError("Проект не найден")
 
         member = await self.workspace_repository.get_member(
             workspace_id=project.workspace_id,
@@ -104,7 +104,7 @@ class ProjectService:
         )
 
         if member is None:
-            raise PermissionError("You do not have access to this project")
+            raise PermissionDeniedError("У вас нет доступа к этому проекту")
 
         ensure_role_allowed(
         role=member.role,
@@ -113,8 +113,8 @@ class ProjectService:
         WorkspaceRole.ADMIN,
         WorkspaceRole.MEMBER,
         },
-        error_message="You do not have permission to update projects",
-)
+        error_message="У вас нет прав на изменение проектов",
+        )
 
         project = await self.project_repository.update(
             project,
@@ -136,7 +136,7 @@ class ProjectService:
         project = await self.project_repository.get_by_id(project_id)
 
         if project is None:
-            raise LookupError("Project not found")
+            raise NotFoundError("Проект не найден")
 
         member = await self.workspace_repository.get_member(
             workspace_id=project.workspace_id,
@@ -144,7 +144,7 @@ class ProjectService:
         )
 
         if member is None:
-            raise PermissionError("You do not have access to this project")
+            raise PermissionDeniedError("У вас нет доступа к этому проекту")
 
         ensure_role_allowed(
         role=member.role,
