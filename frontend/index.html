@@ -54,7 +54,7 @@
 
             <div>
                 <div class="brand-title">TaskFlow</div>
-                <div class="brand-subtitle">Workspace · Project Board</div>
+                <div id="workspace-context" class="brand-subtitle">Workspace · Project Board</div>
             </div>
         </div>
         <div class="header-actions">
@@ -107,158 +107,38 @@
         </section>
 
         <section class="board">
-            <div class="column">
+            <div class="column" data-status="todo">
                 <div class="column-header">
                     <h2>Очередь</h2>
-                    <span>1</span>
+                    <span>0</span>
                 </div>
-
-                <article class="task-card yellow" data-priority="medium">
-                    <div class="task-category">Backend</div>
-                    <h3>Сделать проверку assignee_id</h3>
-                    <p>Исполнитель задачи должен быть участником рабочего пространства.</p>
-
-                    <div class="task-progress">
-                        <span>Чек-лист</span>
-                        <span>0 из 3</span>
-                    </div>
-
-                    <div class="progress-line">
-                        <div style="width: 10%;"></div>
-                    </div>
-
-                    <div class="task-meta">
-                        <span>2026-06-21</span>
-                        <span>2 / 14 ч.</span>
-                    </div>
-                </article>
 
                 <button class="add-column-button">+ Добавить в эту колонку</button>
             </div>
 
-            <div class="column">
+            <div class="column" data-status="in_progress">
                 <div class="column-header">
                     <h2>В работе</h2>
-                    <span>2</span>
+                    <span>0</span>
                 </div>
-
-                <article class="task-card red" data-priority="high">
-                    <div class="task-category">API</div>
-                    <h3>Добавить permission-тесты</h3>
-                    <p>Проверить права owner, admin, member и viewer на уровне API.</p>
-
-                    <div class="task-progress">
-                        <span>Чек-лист</span>
-                        <span>2 из 4</span>
-                    </div>
-
-                    <div class="progress-line">
-                        <div style="width: 50%;"></div>
-                    </div>
-
-                    <div class="task-meta">
-                        <span>2026-06-17</span>
-                        <span>8 / 12 ч.</span>
-                    </div>
-                </article>
-
-                <article class="task-card red" data-priority="high">
-                    <div class="task-category">Docker</div>
-                    <h3>Улучшить production-настройки</h3>
-                    <p>Добавить отдельные настройки для local, test и production окружений.</p>
-
-                    <div class="task-progress">
-                        <span>Чек-лист</span>
-                        <span>1 из 4</span>
-                    </div>
-
-                    <div class="progress-line">
-                        <div style="width: 25%;"></div>
-                    </div>
-
-                    <div class="task-meta">
-                        <span>2026-06-19</span>
-                        <span>4 / 10 ч.</span>
-                    </div>
-                </article>
 
                 <button class="add-column-button">+ Добавить в эту колонку</button>
             </div>
 
-            <div class="column">
+            <div class="column" data-status="cancelled">
                 <div class="column-header">
-                    <h2>На проверке</h2>
-                    <span>1</span>
+                    <h2>Отменено</h2>
+                    <span>0</span>
                 </div>
-
-                <article class="task-card purple" data-priority="medium">
-                    <div class="task-category">Frontend</div>
-                    <h3>Собрать HTML/CSS макет доски</h3>
-                    <p>Сделать первый статичный интерфейс в стиле Kanban.</p>
-
-                    <div class="task-progress">
-                        <span>Чек-лист</span>
-                        <span>3 из 3</span>
-                    </div>
-
-                    <div class="progress-line">
-                        <div style="width: 100%;"></div>
-                    </div>
-
-                    <div class="task-meta">
-                        <span>2026-06-14</span>
-                        <span>7 / 8 ч.</span>
-                    </div>
-                </article>
 
                 <button class="add-column-button">+ Добавить в эту колонку</button>
             </div>
 
-            <div class="column">
+            <div class="column" data-status="done">
                 <div class="column-header">
                     <h2>Выполнено</h2>
-                    <span>2</span>
+                    <span>0</span>
                 </div>
-
-                <article class="task-card green" data-priority="high">
-                    <div class="task-category">CI/CD</div>
-                    <h3>Настроить GitHub Actions</h3>
-                    <p>Автоматический запуск pytest и проверка Docker build после push.</p>
-
-                    <div class="task-progress">
-                        <span>Чек-лист</span>
-                        <span>3 из 3</span>
-                    </div>
-
-                    <div class="progress-line">
-                        <div style="width: 100%;"></div>
-                    </div>
-
-                    <div class="task-meta">
-                        <span>2026-06-12</span>
-                        <span>6 / 6 ч.</span>
-                    </div>
-                </article>
-
-                <article class="task-card blue" data-priority="low">
-                    <div class="task-category">Backend</div>
-                    <h3>Добавить Docker Compose</h3>
-                    <p>Запуск API и PostgreSQL одной командой через Docker.</p>
-
-                    <div class="task-progress">
-                        <span>Чек-лист</span>
-                        <span>3 из 3</span>
-                    </div>
-
-                    <div class="progress-line">
-                        <div style="width: 100%;"></div>
-                    </div>
-
-                    <div class="task-meta">
-                        <span>2026-06-10</span>
-                        <span>8 / 8 ч.</span>
-                    </div>
-                </article>
 
                 <button class="add-column-button">+ Добавить в эту колонку</button>
             </div>
