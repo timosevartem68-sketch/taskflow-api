@@ -224,7 +224,55 @@
             </section>
         </main>
     </div>
+    <div id="task-modal" class="modal-overlay hidden">
+    <div class="modal">
+        <div class="modal-header">
+            <div>
+                <h2>Создать задачу</h2>
+                <p>Добавьте новую задачу в колонку "Очередь"</p>
+            </div>
 
+            <button id="close-modal-button" class="modal-close" type="button">×</button>
+        </div>
+
+        <form id="task-form" class="task-form">
+            <label>
+                Название задачи
+                <input id="task-title" type="text" placeholder="Например: Добавить роли пользователей" required>
+            </label>
+
+            <label>
+                Описание
+                <textarea id="task-description" placeholder="Коротко опишите, что нужно сделать" required></textarea>
+            </label>
+
+            <label>
+                Категория
+                <select id="task-category">
+                    <option value="Backend">Backend</option>
+                    <option value="Frontend">Frontend</option>
+                    <option value="API">API</option>
+                    <option value="Docker">Docker</option>
+                    <option value="CI/CD">CI/CD</option>
+                </select>
+            </label>
+
+            <label>
+                Приоритет
+                <select id="task-priority">
+                    <option value="medium">Средний</option>
+                    <option value="high">Высокий</option>
+                    <option value="low">Низкий</option>
+                </select>
+            </label>
+
+            <div class="modal-actions">
+                <button id="cancel-task-button" class="ghost-button" type="button">Отмена</button>
+                <button class="primary-button" type="submit">Добавить задачу</button>
+            </div>
+        </form>
+    </div>
+</div>
     <script src="app.js"></script>
 </body>
 </html>
