@@ -42,12 +42,36 @@ const taskTitleInput = document.querySelector("#task-title");
 const taskDescriptionInput = document.querySelector("#task-description");
 const taskCategoryInput = document.querySelector("#task-category");
 const taskPriorityInput = document.querySelector("#task-priority");
+// Модальное окно клиента
+const openClientModalButton = document.querySelector("#open-client-modal-button");
+const clientModal = document.querySelector("#client-modal");
+const closeClientModalButton = document.querySelector("#close-client-modal-button");
+const cancelClientButton = document.querySelector("#cancel-client-button");
+const clientForm = document.querySelector("#client-form");
+
+const clientFullNameInput = document.querySelector("#client-full-name");
+const clientCompanyInput = document.querySelector("#client-company");
+const clientPhoneInput = document.querySelector("#client-phone");
+const clientEmailInput = document.querySelector("#client-email");
+const clientSourceInput = document.querySelector("#client-source");
+const clientStatusInput = document.querySelector("#client-status");
+const clientNoteInput = document.querySelector("#client-note");
+
+const clientSearchInput = document.querySelector("#client-search-input");
+const clientStatusFilter = document.querySelector("#client-status-filter");
+const clientsList = document.querySelector("#clients-list");
+
+const clientTotalCount = document.querySelector("#client-total-count");
+const clientActiveCount = document.querySelector("#client-active-count");
+const clientNewCount = document.querySelector("#client-new-count");
+const clientLostCount = document.querySelector("#client-lost-count");
 
 // Состояние приложения
 let authMode = "login";
 let activePriority = "all";
 let currentWorkspace = null;
 let currentProject = null;
+let clients = [];
 
 /*
     localStorage - это маленькое хранилище в браузере.
@@ -650,6 +674,186 @@ function updateStats() {
         statTexts[2].innerText = "Всего задач в проекте";
     }
 }
+// -------------------- CLIENTS --------------------
+
+function loadClientsFromStorage() {
+    const rawClients = localStorage.getItem("taskflow_clients");
+
+    if (!rawClients) {
+        clients = [];
+        return;
+    }
+
+    try {
+        clients = JSON.parse(rawClients);
+    } catch (error) {
+        console.error("Не удалось прочитать клиентов из localStorage", error);
+        clients = [];
+    }
+}
+
+function saveClientsToStorage() {
+    localStorage.setItem("taskflow_clients", JSON.stringify(clients));
+}
+
+function openClientModal() {
+    if (!clientModal) {
+        return;
+    }
+
+    clientModal.classList.remove("hidden");
+    clientFullNameInput.focus();
+}
+
+function closeClientModal() {
+    if (!clientModal || !clientForm) {
+        return;
+    }
+
+    clientModal.classList.add("hidden");
+    clientForm.reset();
+}
+
+function getClientStatusLabel(status) {
+    if (status === "new") {
+        return "Новый";
+    }
+
+    if (status === "in_work") {
+        return "В работе";
+    }
+
+    if (status === "loyal") {
+        return "Постоянный";
+    }
+
+    if (status === "lost") {
+        return "Потерянный";
+    }
+
+    return "Новый";
+}
+
+function getClientAvatarLetter(fullName) {
+    if (!fullName) {
+        return "?";
+    }
+
+    return fullName.trim().slice(0, 1).toUpperCase();
+}
+
+function createClientFromForm() {
+    const client = {
+        id: Date.now(),
+        fullName: clientFullNameInput.value.trim(),
+        company: clientCompanyInput.value.trim(),
+        phone: clientPhoneInput.value.trim(),
+        email: clientEmailInput.value.trim(),
+        source: clientSourceInput.value,
+        status: clientStatusInput.value,
+        note: clientNoteInput.value.trim(),
+        createdAt: new Date().toISOString(),
+    };
+
+    clients.unshift(client);
+    saveClientsToStorage();
+    renderClients();
+}
+
+function renderClients() {
+    if (!clientsList) {
+        return;
+    }
+
+    const searchValue = clientSearchInput ? clientSearchInput.value.toLowerCase().trim() : "";
+    const statusValue = clientStatusFilter ? clientStatusFilter.value : "all";
+
+    const filteredClients = clients.filter(function (client) {
+        const clientText = [
+            client.fullName,
+            client.company,
+            client.phone,
+            client.email,
+            client.source,
+            getClientStatusLabel(client.status),
+        ].join(" ").toLowerCase();
+
+        const matchesSearch = clientText.includes(searchValue);
+        const matchesStatus = statusValue === "all" || client.status === statusValue;
+
+        return matchesSearch && matchesStatus;
+    });
+
+    if (filteredClients.length === 0) {
+        clientsList.innerHTML = `
+            <div class="empty-state">
+                <h3>Клиенты не найдены</h3>
+                <p>Попробуйте изменить поиск или добавьте нового клиента.</p>
+            </div>
+        `;
+    } else {
+        clientsList.innerHTML = filteredClients
+            .map(function (client) {
+                return `
+                    <article class="client-card">
+                        <div class="client-main">
+                            <div class="client-avatar">${escapeHtml(getClientAvatarLetter(client.fullName))}</div>
+
+                            <div>
+                                <div class="client-name">${escapeHtml(client.fullName)}</div>
+                                <div class="client-company">${escapeHtml(client.company || "Компания не указана")}</div>
+                            </div>
+                        </div>
+
+                        <div class="client-contact">
+                            <div><strong>Телефон:</strong> ${escapeHtml(client.phone || "Не указан")}</div>
+                            <div><strong>Email:</strong> ${escapeHtml(client.email || "Не указан")}</div>
+                            <div><strong>Источник:</strong> ${escapeHtml(client.source || "Не указан")}</div>
+                        </div>
+
+                        <div class="client-status client-status--${client.status}">
+                            ${escapeHtml(getClientStatusLabel(client.status))}
+                        </div>
+
+                        <p class="client-note">${escapeHtml(client.note || "Заметка пока не добавлена")}</p>
+                    </article>
+                `;
+            })
+            .join("");
+    }
+
+    updateClientStats();
+}
+
+function updateClientStats() {
+    const total = clients.length;
+    const active = clients.filter(function (client) {
+        return client.status === "in_work";
+    }).length;
+    const newest = clients.filter(function (client) {
+        return client.status === "new";
+    }).length;
+    const lost = clients.filter(function (client) {
+        return client.status === "lost";
+    }).length;
+
+    if (clientTotalCount) {
+        clientTotalCount.innerText = total;
+    }
+
+    if (clientActiveCount) {
+        clientActiveCount.innerText = active;
+    }
+
+    if (clientNewCount) {
+        clientNewCount.innerText = newest;
+    }
+
+    if (clientLostCount) {
+        clientLostCount.innerText = lost;
+    }
+}
+
 
 // -------------------- EVENTS --------------------
 
@@ -793,10 +997,92 @@ sidebarLinks.forEach(function (link) {
     });
 });
 
+if (openClientModalButton) {
+    openClientModalButton.addEventListener("click", function () {
+        openClientModal();
+    });
+}
+
+if (closeClientModalButton) {
+    closeClientModalButton.addEventListener("click", function () {
+        closeClientModal();
+    });
+}
+
+if (cancelClientButton) {
+    cancelClientButton.addEventListener("click", function () {
+        closeClientModal();
+    });
+}
+
+if (clientModal) {
+    clientModal.addEventListener("click", function (event) {
+        if (event.target === clientModal) {
+            closeClientModal();
+        }
+    });
+}
+
+if (clientForm) {
+    clientForm.addEventListener("submit", function (event) {
+        event.preventDefault();
+
+        createClientFromForm();
+        closeClientModal();
+    });
+}
+
+if (clientSearchInput) {
+    clientSearchInput.addEventListener("input", function () {
+        renderClients();
+    });
+}
+
+if (clientStatusFilter) {
+    clientStatusFilter.addEventListener("change", function () {
+        renderClients();
+    });
+}
+
+const openClientButtonFix = document.querySelector("#open-client-modal-button");
+const clientModalFix = document.querySelector("#client-modal");
+const closeClientButtonFix = document.querySelector("#close-client-modal-button");
+const cancelClientButtonFix = document.querySelector("#cancel-client-button");
+
+console.log("Кнопка добавить клиента:", openClientButtonFix);
+console.log("Модалка клиента:", clientModalFix);
+
+if (openClientButtonFix && clientModalFix) {
+    openClientButtonFix.addEventListener("click", function () {
+        clientModalFix.classList.remove("hidden");
+    });
+}
+
+if (closeClientButtonFix && clientModalFix) {
+    closeClientButtonFix.addEventListener("click", function () {
+        clientModalFix.classList.add("hidden");
+    });
+}
+
+if (cancelClientButtonFix && clientModalFix) {
+    cancelClientButtonFix.addEventListener("click", function () {
+        clientModalFix.classList.add("hidden");
+    });
+}
+
+if (clientModalFix) {
+    clientModalFix.addEventListener("click", function (event) {
+        if (event.target === clientModalFix) {
+            clientModalFix.classList.add("hidden");
+        }
+    });
+}
 // -------------------- START --------------------
 
 applyTheme(getSavedTheme());
 setAuthMode("login");
 updateColumnCounters();
 updateStats();
+loadClientsFromStorage();
+renderClients();
 checkAuthOnStart();

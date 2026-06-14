@@ -135,7 +135,8 @@
             <div class="section-placeholder">
                 <div class="section-placeholder-badge">Рабочий стол</div>
                 <h2>Общий обзор CRM</h2>
-                <p>Здесь позже появятся сводка по задачам, клиентам, сделкам, просроченным действиям и активности команды.</p>
+                <p>Здесь позже появятся сводка по задачам, клиентам, сделкам, просроченным действиям и активности
+                    команды.</p>
 
                 <div class="placeholder-grid">
                     <article class="placeholder-card">
@@ -187,9 +188,9 @@
 
             <section class="toolbar">
                 <input
-                    class="search-input"
-                    type="text"
-                    placeholder="Поиск по названию, описанию или статусу..."
+                        class="search-input"
+                        type="text"
+                        placeholder="Поиск по названию, описанию или статусу..."
                 >
 
                 <div class="filters">
@@ -240,38 +241,75 @@
         </section>
 
         <section class="crm-section" data-section-page="clients">
-            <div class="section-placeholder">
-                <div class="section-placeholder-badge">Клиенты</div>
-                <h2>База клиентов</h2>
-                <p>Здесь будет список клиентов, контакты, компании, история общения и быстрые действия.</p>
-
-                <div class="placeholder-grid">
-                    <article class="placeholder-card">
-                        <span>Контакты</span>
-                        <strong>ФИО, телефон, email</strong>
-                        <p>Храним все данные клиента в одном месте.</p>
-                    </article>
-
-                    <article class="placeholder-card">
-                        <span>История</span>
-                        <strong>Звонки и заметки</strong>
-                        <p>Фиксируем, кто и когда общался с клиентом.</p>
-                    </article>
-
-                    <article class="placeholder-card">
-                        <span>Ответственный</span>
-                        <strong>Менеджер клиента</strong>
-                        <p>Каждый клиент будет закреплён за сотрудником.</p>
-                    </article>
+            <div class="crm-page-head">
+                <div>
+                    <div class="section-placeholder-badge">Клиенты</div>
+                    <h2>База клиентов</h2>
+                    <p>Храните контакты, компании, статусы, источники заявок и заметки по каждому клиенту.</p>
                 </div>
+
+                <button id="open-client-modal-button" class="primary-button" type="button">
+                    + Добавить клиента
+                </button>
             </div>
+
+            <section class="client-stats-grid">
+                <article class="client-stat-card">
+                    <span>Всего клиентов</span>
+                    <strong id="client-total-count">0</strong>
+                    <p>Контактов в базе</p>
+                </article>
+
+                <article class="client-stat-card">
+                    <span>В работе</span>
+                    <strong id="client-active-count">0</strong>
+                    <p>Клиентов в обработке</p>
+                </article>
+
+                <article class="client-stat-card">
+                    <span>Новые</span>
+                    <strong id="client-new-count">0</strong>
+                    <p>Нужен первый контакт</p>
+                </article>
+
+                <article class="client-stat-card">
+                    <span>Потерянные</span>
+                    <strong id="client-lost-count">0</strong>
+                    <p>Клиенты без сделки</p>
+                </article>
+            </section>
+
+            <section class="clients-toolbar">
+                <input
+                        id="client-search-input"
+                        class="search-input"
+                        type="text"
+                        placeholder="Поиск по имени, компании, телефону или email..."
+                >
+
+                <select id="client-status-filter" class="client-filter-select">
+                    <option value="all">Все статусы</option>
+                    <option value="new">Новый</option>
+                    <option value="in_work">В работе</option>
+                    <option value="loyal">Постоянный</option>
+                    <option value="lost">Потерянный</option>
+                </select>
+            </section>
+
+            <section id="clients-list" class="clients-list">
+                <div class="empty-state">
+                    <h3>Клиентов пока нет</h3>
+                    <p>Добавьте первого клиента, чтобы начать вести CRM-базу.</p>
+                </div>
+            </section>
         </section>
 
         <section class="crm-section" data-section-page="deals">
             <div class="section-placeholder">
                 <div class="section-placeholder-badge">Сделки</div>
                 <h2>Воронка продаж</h2>
-                <p>Здесь будет CRM-воронка: новые заявки, переговоры, коммерческое предложение, оплата и закрытые сделки.</p>
+                <p>Здесь будет CRM-воронка: новые заявки, переговоры, коммерческое предложение, оплата и закрытые
+                    сделки.</p>
 
                 <div class="placeholder-grid">
                     <article class="placeholder-card">
@@ -458,7 +496,73 @@
         </form>
     </div>
 </div>
+<div id="client-modal" class="modal-overlay hidden">
+    <div class="modal">
+        <div class="modal-header">
+            <div>
+                <h2>Добавить клиента</h2>
+                <p>Заполните основные данные клиента для CRM-базы</p>
+            </div>
 
+            <button id="close-client-modal-button" class="modal-close" type="button">×</button>
+        </div>
+
+        <form id="client-form" class="task-form">
+            <label>
+                Имя клиента
+                <input id="client-full-name" type="text" placeholder="Например: Иван Петров" required>
+            </label>
+
+            <label>
+                Компания
+                <input id="client-company" type="text" placeholder="Например: СтройДом">
+            </label>
+
+            <label>
+                Телефон
+                <input id="client-phone" type="tel" placeholder="+7 999 123-45-67">
+            </label>
+
+            <label>
+                Email
+                <input id="client-email" type="email" placeholder="client@example.com">
+            </label>
+
+            <label>
+                Источник
+                <select id="client-source">
+                    <option value="Сайт">Сайт</option>
+                    <option value="Звонок">Звонок</option>
+                    <option value="Рекомендация">Рекомендация</option>
+                    <option value="Соцсети">Соцсети</option>
+                    <option value="Холодная база">Холодная база</option>
+                </select>
+            </label>
+
+            <label>
+                Статус
+                <select id="client-status">
+                    <option value="new">Новый</option>
+                    <option value="in_work">В работе</option>
+                    <option value="loyal">Постоянный</option>
+                    <option value="lost">Потерянный</option>
+                </select>
+            </label>
+
+            <label>
+                Заметка
+                <textarea id="client-note" placeholder="Кратко опишите ситуацию, интерес или следующий шаг"></textarea>
+            </label>
+
+            <div class="modal-actions">
+                <button id="cancel-client-button" class="ghost-button" type="button">Отмена</button>
+                <button class="primary-button" type="submit">Сохранить клиента</button>
+            </div>
+        </form>
+    </div>
+</div>
 <script src="app.js"></script>
+
+
 </body>
 </html>
