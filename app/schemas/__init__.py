@@ -1,3 +1,10 @@
+from app.schemas.client import (
+    ClientCreate,
+    ClientRead,
+    ClientResponsibleUpdate,
+    ClientStatusUpdate,
+    ClientUpdate,
+)
 from app.schemas.common import ErrorResponse, Page
 from app.schemas.project import ProjectCreate, ProjectRead, ProjectUpdate
 from app.schemas.task import (
@@ -20,6 +27,11 @@ from app.schemas.workspace import (
 __all__ = [
     "ErrorResponse",
     "Page",
+    "ClientCreate",
+    "ClientRead",
+    "ClientResponsibleUpdate",
+    "ClientStatusUpdate",
+    "ClientUpdate",
     "ProjectCreate",
     "ProjectRead",
     "ProjectUpdate",
@@ -39,5 +51,4 @@ __all__ = [
     "WorkspaceUpdate",
     "TokenRead",
     "UserLogin",
-    "TokenRead"
 ]
