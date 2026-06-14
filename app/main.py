@@ -1,8 +1,8 @@
 from fastapi import Depends, FastAPI, Request, status
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.v1.router import api_router
 from app.core.config import settings
@@ -14,7 +14,9 @@ from app.core.exceptions import (
 )
 from app.db.session import get_db
 
+
 app = FastAPI(title=settings.app_name)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -26,8 +28,8 @@ app.add_middleware(
 
 @app.exception_handler(NotFoundError)
 async def not_found_error_handler(
-        _request: Request,
-        exc: NotFoundError,
+    _request: Request,
+    exc: NotFoundError,
 ):
     return JSONResponse(
         status_code=status.HTTP_404_NOT_FOUND,
@@ -37,8 +39,8 @@ async def not_found_error_handler(
 
 @app.exception_handler(PermissionDeniedError)
 async def permission_denied_error_handler(
-        _request: Request,
-        exc: PermissionDeniedError,
+    _request: Request,
+    exc: PermissionDeniedError,
 ):
     return JSONResponse(
         status_code=status.HTTP_403_FORBIDDEN,
@@ -48,8 +50,8 @@ async def permission_denied_error_handler(
 
 @app.exception_handler(ConflictError)
 async def conflict_error_handler(
-        _request: Request,
-        exc: ConflictError,
+    _request: Request,
+    exc: ConflictError,
 ):
     return JSONResponse(
         status_code=status.HTTP_409_CONFLICT,
@@ -59,52 +61,8 @@ async def conflict_error_handler(
 
 @app.exception_handler(AuthenticationError)
 async def authentication_error_handler(
-        _request: Request,
-        exc: AuthenticationError,
-):
-    return JSONResponse(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        content={"detail": str(exc)},
-    )
-
-
-@app.exception_handler(NotFoundError)
-async def not_found_error_handler(
-        request: Request,
-        exc: NotFoundError,
-):
-    return JSONResponse(
-        status_code=status.HTTP_404_NOT_FOUND,
-        content={"detail": str(exc)},
-    )
-
-
-@app.exception_handler(PermissionDeniedError)
-async def permission_denied_error_handler(
-        request: Request,
-        exc: PermissionDeniedError,
-):
-    return JSONResponse(
-        status_code=status.HTTP_403_FORBIDDEN,
-        content={"detail": str(exc)},
-    )
-
-
-@app.exception_handler(ConflictError)
-async def conflict_error_handler(
-        request: Request,
-        exc: ConflictError,
-):
-    return JSONResponse(
-        status_code=status.HTTP_409_CONFLICT,
-        content={"detail": str(exc)},
-    )
-
-
-@app.exception_handler(AuthenticationError)
-async def authentication_error_handler(
-        request: Request,
-        exc: AuthenticationError,
+    _request: Request,
+    exc: AuthenticationError,
 ):
     return JSONResponse(
         status_code=status.HTTP_401_UNAUTHORIZED,
