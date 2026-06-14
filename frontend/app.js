@@ -813,6 +813,25 @@ async function createClientFromForm() {
     renderClients();
 }
 
+async function deleteClient(clientId) {
+    const confirmed = confirm("Удалить клиента? Это действие нельзя отменить.");
+
+    if (!confirmed) {
+        return;
+    }
+
+    await requestJson(`${API_URL}/clients/${clientId}`, {
+        method: "DELETE",
+        headers: getAuthHeaders(),
+    });
+
+    clients = clients.filter(function (client) {
+        return client.id !== clientId;
+    });
+
+    renderClients();
+}
+
 function renderClients() {
     if (!clientsList) {
         return;
@@ -871,6 +890,12 @@ function renderClients() {
                         </div>
 
                         <p class="client-note">${escapeHtml(client.note || "Заметка пока не добавлена")}</p>
+
+                        <div class="client-actions">
+                            <button class="ghost-button client-delete-button" type="button" data-client-id="${client.id}">
+                                Удалить
+                            </button>
+                        </div>
                     </article>
                 `;
             })
@@ -878,6 +903,23 @@ function renderClients() {
     }
 
     updateClientStats();
+    bindClientActionButtons();
+}
+
+function bindClientActionButtons() {
+    const deleteButtons = document.querySelectorAll(".client-delete-button");
+
+    deleteButtons.forEach(function (button) {
+        button.addEventListener("click", async function () {
+            const clientId = Number(button.dataset.clientId);
+
+            try {
+                await deleteClient(clientId);
+            } catch (error) {
+                alert(error.message);
+            }
+        });
+    });
 }
 
 function updateClientStats() {

@@ -1766,3 +1766,23 @@ body.light-theme .auth-card {
 .header-actions .ghost-button:nth-child(4) {
     min-width: 150px;
 }
+
+.client-actions {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding-top: 12px;
+    border-top: 1px solid var(--color-border);
+}
+
+.client-delete-button {
+    min-height: 36px;
+    padding: 0 14px;
+    font-size: 12px;
+}
+
+.client-delete-button:hover {
+    border-color: var(--color-danger);
+    color: var(--color-danger);
+}
