@@ -340,6 +340,7 @@ async function loadDashboardData() {
     workspaceContext.innerText = `${currentWorkspace.name} · ${currentProject.name}`;
 
     await loadTasks();
+    await loadClientsFromApi();
 }
 
 async function getOrCreateWorkspace() {
@@ -676,24 +677,68 @@ function updateStats() {
 }
 // -------------------- CLIENTS --------------------
 
-function loadClientsFromStorage() {
-    const rawClients = localStorage.getItem("taskflow_clients");
+function normalizeClientStatusForApi(status) {
+    if (status === "in_work") {
+        return "in_progress";
+    }
 
-    if (!rawClients) {
+    if (status === "loyal") {
+        return "active";
+    }
+
+    return status || "new";
+}
+
+function normalizeClientStatusForFrontend(status) {
+    if (status === "in_work") {
+        return "in_progress";
+    }
+
+    if (status === "loyal") {
+        return "active";
+    }
+
+    return status || "new";
+}
+
+function normalizeClientFromApi(client) {
+    return {
+        id: client.id,
+        workspaceId: client.workspace_id,
+        fullName: client.full_name,
+        company: client.company,
+        phone: client.phone,
+        email: client.email,
+        source: client.source,
+        status: normalizeClientStatusForFrontend(client.status),
+        note: client.note,
+        responsibleId: client.responsible_id,
+        createdById: client.created_by_id,
+        createdAt: client.created_at,
+        updatedAt: client.updated_at,
+    };
+}
+
+async function loadClientsFromApi() {
+    if (!currentWorkspace) {
         clients = [];
+        renderClients();
         return;
     }
 
-    try {
-        clients = JSON.parse(rawClients);
-    } catch (error) {
-        console.error("Не удалось прочитать клиентов из localStorage", error);
-        clients = [];
-    }
-}
+    const data = await requestJson(
+        `${API_URL}/clients?workspace_id=${currentWorkspace.id}&limit=100&sort_by=created_at&sort_order=desc`,
+        {
+            method: "GET",
+            headers: getAuthHeaders(),
+        }
+    );
 
-function saveClientsToStorage() {
-    localStorage.setItem("taskflow_clients", JSON.stringify(clients));
+    clients = normalizeList(data).map(function (client) {
+        return normalizeClientFromApi(client);
+    });
+
+    renderClients();
 }
 
 function openClientModal() {
@@ -719,12 +764,12 @@ function getClientStatusLabel(status) {
         return "Новый";
     }
 
-    if (status === "in_work") {
+    if (status === "in_progress" || status === "in_work") {
         return "В работе";
     }
 
-    if (status === "loyal") {
-        return "Постоянный";
+    if (status === "active" || status === "loyal") {
+        return "Активный";
     }
 
     if (status === "lost") {
@@ -742,21 +787,29 @@ function getClientAvatarLetter(fullName) {
     return fullName.trim().slice(0, 1).toUpperCase();
 }
 
-function createClientFromForm() {
-    const client = {
-        id: Date.now(),
-        fullName: clientFullNameInput.value.trim(),
-        company: clientCompanyInput.value.trim(),
-        phone: clientPhoneInput.value.trim(),
-        email: clientEmailInput.value.trim(),
-        source: clientSourceInput.value,
-        status: clientStatusInput.value,
-        note: clientNoteInput.value.trim(),
-        createdAt: new Date().toISOString(),
-    };
+async function createClientFromForm() {
+    if (!currentWorkspace) {
+        alert("Рабочее пространство ещё не загружено");
+        return;
+    }
 
-    clients.unshift(client);
-    saveClientsToStorage();
+    const createdClient = await requestJson(`${API_URL}/clients`, {
+        method: "POST",
+        headers: getJsonAuthHeaders(),
+        body: JSON.stringify({
+            workspace_id: currentWorkspace.id,
+            full_name: clientFullNameInput.value.trim(),
+            company: clientCompanyInput.value.trim() || null,
+            phone: clientPhoneInput.value.trim() || null,
+            email: clientEmailInput.value.trim() || null,
+            source: clientSourceInput.value || null,
+            status: normalizeClientStatusForApi(clientStatusInput.value),
+            note: clientNoteInput.value.trim() || null,
+            responsible_id: null,
+        }),
+    });
+
+    clients.unshift(normalizeClientFromApi(createdClient));
     renderClients();
 }
 
@@ -766,7 +819,9 @@ function renderClients() {
     }
 
     const searchValue = clientSearchInput ? clientSearchInput.value.toLowerCase().trim() : "";
-    const statusValue = clientStatusFilter ? clientStatusFilter.value : "all";
+    const statusValue = clientStatusFilter
+        ? normalizeClientStatusForFrontend(clientStatusFilter.value)
+        : "all";
 
     const filteredClients = clients.filter(function (client) {
         const clientText = [
@@ -827,12 +882,15 @@ function renderClients() {
 
 function updateClientStats() {
     const total = clients.length;
+
     const active = clients.filter(function (client) {
-        return client.status === "in_work";
+        return client.status === "in_progress";
     }).length;
+
     const newest = clients.filter(function (client) {
         return client.status === "new";
     }).length;
+
     const lost = clients.filter(function (client) {
         return client.status === "lost";
     }).length;
@@ -853,7 +911,6 @@ function updateClientStats() {
         clientLostCount.innerText = lost;
     }
 }
-
 
 // -------------------- EVENTS --------------------
 
@@ -1024,11 +1081,15 @@ if (clientModal) {
 }
 
 if (clientForm) {
-    clientForm.addEventListener("submit", function (event) {
+    clientForm.addEventListener("submit", async function (event) {
         event.preventDefault();
 
-        createClientFromForm();
-        closeClientModal();
+        try {
+            await createClientFromForm();
+            closeClientModal();
+        } catch (error) {
+            alert(error.message);
+        }
     });
 }
 
@@ -1044,45 +1105,12 @@ if (clientStatusFilter) {
     });
 }
 
-const openClientButtonFix = document.querySelector("#open-client-modal-button");
-const clientModalFix = document.querySelector("#client-modal");
-const closeClientButtonFix = document.querySelector("#close-client-modal-button");
-const cancelClientButtonFix = document.querySelector("#cancel-client-button");
 
-console.log("Кнопка добавить клиента:", openClientButtonFix);
-console.log("Модалка клиента:", clientModalFix);
-
-if (openClientButtonFix && clientModalFix) {
-    openClientButtonFix.addEventListener("click", function () {
-        clientModalFix.classList.remove("hidden");
-    });
-}
-
-if (closeClientButtonFix && clientModalFix) {
-    closeClientButtonFix.addEventListener("click", function () {
-        clientModalFix.classList.add("hidden");
-    });
-}
-
-if (cancelClientButtonFix && clientModalFix) {
-    cancelClientButtonFix.addEventListener("click", function () {
-        clientModalFix.classList.add("hidden");
-    });
-}
-
-if (clientModalFix) {
-    clientModalFix.addEventListener("click", function (event) {
-        if (event.target === clientModalFix) {
-            clientModalFix.classList.add("hidden");
-        }
-    });
-}
 // -------------------- START --------------------
 
 applyTheme(getSavedTheme());
 setAuthMode("login");
 updateColumnCounters();
 updateStats();
-loadClientsFromStorage();
-renderClients();
+updateClientStats();
 checkAuthOnStart();
