@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TaskFlow Planner</title>
+    <title>TaskFlow CRM</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+
 <section id="auth-screen" class="auth-screen">
     <div class="auth-card">
         <div class="brand auth-brand">
@@ -46,11 +47,11 @@
     </div>
 </section>
 
-
 <div id="app-page" class="page hidden">
     <aside class="sidebar">
         <div class="sidebar-logo">
             <div class="sidebar-logo-icon">✓</div>
+
             <div>
                 <div class="sidebar-logo-title">TaskFlow CRM</div>
                 <div class="sidebar-logo-text">Управление бизнесом</div>
@@ -58,7 +59,11 @@
         </div>
 
         <nav class="sidebar-nav">
-            <button class="sidebar-link" type="button" data-section="dashboard"></button>
+            <button class="sidebar-link" type="button" data-section="dashboard">
+                <span class="sidebar-link-icon">⌂</span>
+                <span>Рабочий стол</span>
+            </button>
+
             <button class="sidebar-link active" type="button" data-section="tasks">
                 <span class="sidebar-link-icon">✓</span>
                 <span>Задачи</span>
@@ -101,7 +106,6 @@
         </div>
     </aside>
 
-
     <header class="header">
         <div class="brand">
             <div class="brand-icon">✓</div>
@@ -111,6 +115,7 @@
                 <div id="workspace-context" class="brand-subtitle">Workspace · Project Board</div>
             </div>
         </div>
+
         <div class="header-actions">
             <div id="current-user" class="current-user"></div>
 
@@ -119,9 +124,9 @@
                 <span class="theme-toggle-text">Тёмная</span>
             </button>
 
-            <button id="logout-button" class="ghost-button">Выйти</button>
-            <button class="ghost-button">Документация</button>
-            <button id="create-task-button" class="primary-button">Создать задачу</button>
+            <button id="logout-button" class="ghost-button" type="button">Выйти</button>
+            <button class="ghost-button" type="button">Документация</button>
+            <button id="create-task-button" class="primary-button" type="button">Создать задачу</button>
         </div>
     </header>
 
@@ -130,8 +135,27 @@
             <div class="section-placeholder">
                 <div class="section-placeholder-badge">Рабочий стол</div>
                 <h2>Общий обзор CRM</h2>
-                <p>Здесь позже появятся сводка по задачам, клиентам, сделкам, просроченным действиям и активности
-                    команды.</p>
+                <p>Здесь позже появятся сводка по задачам, клиентам, сделкам, просроченным действиям и активности команды.</p>
+
+                <div class="placeholder-grid">
+                    <article class="placeholder-card">
+                        <span>Задачи</span>
+                        <strong>Контроль работы</strong>
+                        <p>Быстрый обзор активных, выполненных и просроченных задач.</p>
+                    </article>
+
+                    <article class="placeholder-card">
+                        <span>Клиенты</span>
+                        <strong>База контактов</strong>
+                        <p>Компании, контактные лица, история общения и ответственные.</p>
+                    </article>
+
+                    <article class="placeholder-card">
+                        <span>Сделки</span>
+                        <strong>Воронка продаж</strong>
+                        <p>Этапы сделки, сумма, статус, источник заявки и менеджер.</p>
+                    </article>
+                </div>
             </div>
         </section>
 
@@ -163,16 +187,16 @@
 
             <section class="toolbar">
                 <input
-                        class="search-input"
-                        type="text"
-                        placeholder="Поиск по названию, описанию или статусу..."
+                    class="search-input"
+                    type="text"
+                    placeholder="Поиск по названию, описанию или статусу..."
                 >
 
                 <div class="filters">
-                    <button class="filter-button active">Все</button>
-                    <button class="filter-button">Высокий</button>
-                    <button class="filter-button">Средний</button>
-                    <button class="filter-button">Низкий</button>
+                    <button class="filter-button active" type="button">Все</button>
+                    <button class="filter-button" type="button">Высокий</button>
+                    <button class="filter-button" type="button">Средний</button>
+                    <button class="filter-button" type="button">Низкий</button>
                 </div>
             </section>
 
@@ -183,7 +207,7 @@
                         <span>0</span>
                     </div>
 
-                    <button class="add-column-button">+ Добавить в эту колонку</button>
+                    <button class="add-column-button" type="button">+ Добавить в эту колонку</button>
                 </div>
 
                 <div class="column" data-status="in_progress">
@@ -192,7 +216,7 @@
                         <span>0</span>
                     </div>
 
-                    <button class="add-column-button">+ Добавить в эту колонку</button>
+                    <button class="add-column-button" type="button">+ Добавить в эту колонку</button>
                 </div>
 
                 <div class="column" data-status="cancelled">
@@ -201,7 +225,7 @@
                         <span>0</span>
                     </div>
 
-                    <button class="add-column-button">+ Добавить в эту колонку</button>
+                    <button class="add-column-button" type="button">+ Добавить в эту колонку</button>
                 </div>
 
                 <div class="column" data-status="done">
@@ -210,7 +234,7 @@
                         <span>0</span>
                     </div>
 
-                    <button class="add-column-button">+ Добавить в эту колонку</button>
+                    <button class="add-column-button" type="button">+ Добавить в эту колонку</button>
                 </div>
             </section>
         </section>
@@ -220,6 +244,26 @@
                 <div class="section-placeholder-badge">Клиенты</div>
                 <h2>База клиентов</h2>
                 <p>Здесь будет список клиентов, контакты, компании, история общения и быстрые действия.</p>
+
+                <div class="placeholder-grid">
+                    <article class="placeholder-card">
+                        <span>Контакты</span>
+                        <strong>ФИО, телефон, email</strong>
+                        <p>Храним все данные клиента в одном месте.</p>
+                    </article>
+
+                    <article class="placeholder-card">
+                        <span>История</span>
+                        <strong>Звонки и заметки</strong>
+                        <p>Фиксируем, кто и когда общался с клиентом.</p>
+                    </article>
+
+                    <article class="placeholder-card">
+                        <span>Ответственный</span>
+                        <strong>Менеджер клиента</strong>
+                        <p>Каждый клиент будет закреплён за сотрудником.</p>
+                    </article>
+                </div>
             </div>
         </section>
 
@@ -227,8 +271,27 @@
             <div class="section-placeholder">
                 <div class="section-placeholder-badge">Сделки</div>
                 <h2>Воронка продаж</h2>
-                <p>Здесь будет CRM-воронка: новые заявки, переговоры, коммерческое предложение, оплата и закрытые
-                    сделки.</p>
+                <p>Здесь будет CRM-воронка: новые заявки, переговоры, коммерческое предложение, оплата и закрытые сделки.</p>
+
+                <div class="placeholder-grid">
+                    <article class="placeholder-card">
+                        <span>Новая заявка</span>
+                        <strong>Первичный контакт</strong>
+                        <p>Лид только попал в CRM и ждёт обработки.</p>
+                    </article>
+
+                    <article class="placeholder-card">
+                        <span>Переговоры</span>
+                        <strong>Обсуждение условий</strong>
+                        <p>Менеджер уточняет задачу, бюджет и сроки.</p>
+                    </article>
+
+                    <article class="placeholder-card">
+                        <span>Оплата</span>
+                        <strong>Финальный этап</strong>
+                        <p>Клиент готов оплатить или уже оплатил услугу.</p>
+                    </article>
+                </div>
             </div>
         </section>
 
@@ -237,6 +300,26 @@
                 <div class="section-placeholder-badge">Проекты</div>
                 <h2>Проекты и рабочие пространства</h2>
                 <p>Здесь будет управление проектами, участниками, ролями и настройками рабочих процессов.</p>
+
+                <div class="placeholder-grid">
+                    <article class="placeholder-card">
+                        <span>Рабочие пространства</span>
+                        <strong>Разделение команд</strong>
+                        <p>Каждая команда сможет работать в своём пространстве.</p>
+                    </article>
+
+                    <article class="placeholder-card">
+                        <span>Проекты</span>
+                        <strong>Задачи по направлениям</strong>
+                        <p>Проекты помогут разделять клиентов, отделы и процессы.</p>
+                    </article>
+
+                    <article class="placeholder-card">
+                        <span>Роли</span>
+                        <strong>Права доступа</strong>
+                        <p>Owner, admin, member и viewer будут видеть разные возможности.</p>
+                    </article>
+                </div>
             </div>
         </section>
 
@@ -245,6 +328,26 @@
                 <div class="section-placeholder-badge">Команда</div>
                 <h2>Команда</h2>
                 <p>Здесь будет список сотрудников, роли, нагрузка, активность и права доступа.</p>
+
+                <div class="placeholder-grid">
+                    <article class="placeholder-card">
+                        <span>Сотрудники</span>
+                        <strong>Пользователи системы</strong>
+                        <p>Добавление сотрудников, назначение ролей и рабочих пространств.</p>
+                    </article>
+
+                    <article class="placeholder-card">
+                        <span>Нагрузка</span>
+                        <strong>Кто чем занят</strong>
+                        <p>Покажем активные задачи и перегруз сотрудников.</p>
+                    </article>
+
+                    <article class="placeholder-card">
+                        <span>Активность</span>
+                        <strong>История действий</strong>
+                        <p>Будет видно, кто создал задачу, изменил статус или закрыл сделку.</p>
+                    </article>
+                </div>
             </div>
         </section>
 
@@ -253,6 +356,26 @@
                 <div class="section-placeholder-badge">Аналитика</div>
                 <h2>Аналитика CRM</h2>
                 <p>Здесь будут графики, отчёты, конверсия, задачи в работе и эффективность команды.</p>
+
+                <div class="placeholder-grid">
+                    <article class="placeholder-card">
+                        <span>Конверсия</span>
+                        <strong>Эффективность продаж</strong>
+                        <p>Покажем переходы сделок между этапами воронки.</p>
+                    </article>
+
+                    <article class="placeholder-card">
+                        <span>Задачи</span>
+                        <strong>Рабочая нагрузка</strong>
+                        <p>Сколько задач открыто, выполнено, просрочено и в работе.</p>
+                    </article>
+
+                    <article class="placeholder-card">
+                        <span>Команда</span>
+                        <strong>Результаты сотрудников</strong>
+                        <p>Будущая аналитика по менеджерам и ответственным.</p>
+                    </article>
+                </div>
             </div>
         </section>
 
@@ -261,10 +384,31 @@
                 <div class="section-placeholder-badge">Настройки</div>
                 <h2>Настройки системы</h2>
                 <p>Здесь будут настройки профиля, темы, уведомлений, ролей, интеграций и рабочих пространств.</p>
+
+                <div class="placeholder-grid">
+                    <article class="placeholder-card">
+                        <span>Профиль</span>
+                        <strong>Данные пользователя</strong>
+                        <p>Имя, email, пароль, аватар и персональные настройки.</p>
+                    </article>
+
+                    <article class="placeholder-card">
+                        <span>Интерфейс</span>
+                        <strong>Тёмная и светлая тема</strong>
+                        <p>Выбор темы, компактности интерфейса и языка системы.</p>
+                    </article>
+
+                    <article class="placeholder-card">
+                        <span>Интеграции</span>
+                        <strong>Внешние сервисы</strong>
+                        <p>Позже добавим подключения почты, телефонии, Telegram и webhook.</p>
+                    </article>
+                </div>
             </div>
         </section>
     </main>
 </div>
+
 <div id="task-modal" class="modal-overlay hidden">
     <div class="modal">
         <div class="modal-header">
@@ -314,6 +458,7 @@
         </form>
     </div>
 </div>
+
 <script src="app.js"></script>
 </body>
 </html>
