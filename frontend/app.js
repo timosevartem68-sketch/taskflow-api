@@ -20,12 +20,17 @@ const authMessage = document.querySelector("#auth-message");
 const currentUser = document.querySelector("#current-user");
 const logoutButton = document.querySelector("#logout-button");
 const workspaceContext = document.querySelector("#workspace-context");
+const themeToggleButton = document.querySelector("#theme-toggle-button");
+const themeToggleIcon = document.querySelector(".theme-toggle-icon");
+const themeToggleText = document.querySelector(".theme-toggle-text");
 
 const createTaskButton = document.querySelector("#create-task-button");
 const createCard = document.querySelector(".create-card");
 
 const searchInput = document.querySelector(".search-input");
 const filterButtons = document.querySelectorAll(".filter-button");
+const sidebarLinks = document.querySelectorAll(".sidebar-link");
+const crmSections = document.querySelectorAll(".crm-section");
 
 // Модальное окно задачи
 const taskModal = document.querySelector("#task-modal");
@@ -194,8 +199,49 @@ function normalizeList(data) {
 
     return [];
 }
+// -------------------- THEME --------------------
 
+function getSavedTheme() {
+    return localStorage.getItem("taskflow_theme") || "dark";
+}
+
+function saveTheme(theme) {
+    localStorage.setItem("taskflow_theme", theme);
+}
+
+function applyTheme(theme) {
+    if (theme === "light") {
+        document.body.classList.add("light-theme");
+
+        if (themeToggleIcon) {
+            themeToggleIcon.innerText = "☀";
+        }
+
+        if (themeToggleText) {
+            themeToggleText.innerText = "Светлая";
+        }
+    } else {
+        document.body.classList.remove("light-theme");
+
+        if (themeToggleIcon) {
+            themeToggleIcon.innerText = "☾";
+        }
+
+        if (themeToggleText) {
+            themeToggleText.innerText = "Тёмная";
+        }
+    }
+}
+
+function toggleTheme() {
+    const currentTheme = getSavedTheme();
+    const nextTheme = currentTheme === "dark" ? "light" : "dark";
+
+    saveTheme(nextTheme);
+    applyTheme(nextTheme);
+}
 // -------------------- AUTH --------------------
+
 
 async function registerUser() {
     await requestJson(`${API_URL}/auth/register`, {
@@ -639,6 +685,12 @@ logoutButton.addEventListener("click", function () {
     showAuthScreen();
 });
 
+if (themeToggleButton) {
+    themeToggleButton.addEventListener("click", function () {
+        toggleTheme();
+    });
+}
+
 createTaskButton.addEventListener("click", function () {
     openTaskModal();
 });
@@ -715,9 +767,35 @@ filterButtons.forEach(function (button) {
         filterTasks();
     });
 });
+function showCrmSection(sectionName) {
+    crmSections.forEach(function (section) {
+        if (section.dataset.sectionPage === sectionName) {
+            section.classList.add("active");
+        } else {
+            section.classList.remove("active");
+        }
+    });
+}
+
+sidebarLinks.forEach(function (link) {
+    link.addEventListener("click", function () {
+        sidebarLinks.forEach(function (item) {
+            item.classList.remove("active");
+        });
+
+        link.classList.add("active");
+
+        const sectionName = link.dataset.section;
+
+        showCrmSection(sectionName);
+
+        console.log("Открыт раздел CRM:", sectionName);
+    });
+});
 
 // -------------------- START --------------------
 
+applyTheme(getSavedTheme());
 setAuthMode("login");
 updateColumnCounters();
 updateStats();

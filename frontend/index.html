@@ -48,6 +48,60 @@
 
 
 <div id="app-page" class="page hidden">
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <div class="sidebar-logo-icon">✓</div>
+            <div>
+                <div class="sidebar-logo-title">TaskFlow CRM</div>
+                <div class="sidebar-logo-text">Управление бизнесом</div>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <button class="sidebar-link" type="button" data-section="dashboard"></button>
+            <button class="sidebar-link active" type="button" data-section="tasks">
+                <span class="sidebar-link-icon">✓</span>
+                <span>Задачи</span>
+            </button>
+
+            <button class="sidebar-link" type="button" data-section="clients">
+                <span class="sidebar-link-icon">●</span>
+                <span>Клиенты</span>
+            </button>
+
+            <button class="sidebar-link" type="button" data-section="deals">
+                <span class="sidebar-link-icon">₽</span>
+                <span>Сделки</span>
+            </button>
+
+            <button class="sidebar-link" type="button" data-section="projects">
+                <span class="sidebar-link-icon">▦</span>
+                <span>Проекты</span>
+            </button>
+
+            <button class="sidebar-link" type="button" data-section="team">
+                <span class="sidebar-link-icon">👥</span>
+                <span>Команда</span>
+            </button>
+
+            <button class="sidebar-link" type="button" data-section="analytics">
+                <span class="sidebar-link-icon">↗</span>
+                <span>Аналитика</span>
+            </button>
+
+            <button class="sidebar-link" type="button" data-section="settings">
+                <span class="sidebar-link-icon">⚙</span>
+                <span>Настройки</span>
+            </button>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="sidebar-footer-label">Текущий режим</div>
+            <div class="sidebar-footer-value">CRM + задачи</div>
+        </div>
+    </aside>
+
+
     <header class="header">
         <div class="brand">
             <div class="brand-icon">✓</div>
@@ -59,6 +113,12 @@
         </div>
         <div class="header-actions">
             <div id="current-user" class="current-user"></div>
+
+            <button id="theme-toggle-button" class="theme-toggle-button" type="button">
+                <span class="theme-toggle-icon">☾</span>
+                <span class="theme-toggle-text">Тёмная</span>
+            </button>
+
             <button id="logout-button" class="ghost-button">Выйти</button>
             <button class="ghost-button">Документация</button>
             <button id="create-task-button" class="primary-button">Создать задачу</button>
@@ -66,81 +126,141 @@
     </header>
 
     <main class="main">
-        <section class="stats-grid">
-            <article class="stat-card">
-                <div class="stat-label">Прогресс по задачам</div>
-                <div class="stat-value">33%</div>
-                <div class="stat-text">2 из 6 задач выполнено</div>
-            </article>
-
-            <article class="stat-card">
-                <div class="stat-label">В работе</div>
-                <div class="stat-value">43 ч.</div>
-                <div class="stat-text">Плановая нагрузка команды</div>
-            </article>
-
-            <article class="stat-card">
-                <div class="stat-label">Майлстоуны</div>
-                <div class="stat-value">65%</div>
-                <div class="stat-text">Закрыто ключевых этапов</div>
-            </article>
-
-            <article class="create-card">
-                <div class="create-title">+ Создать задачу</div>
-                <div class="create-text">Добавьте новую задачу в выбранный проект</div>
-            </article>
-        </section>
-
-        <section class="toolbar">
-            <input
-                    class="search-input"
-                    type="text"
-                    placeholder="Поиск по названию, описанию или статусу..."
-            >
-
-            <div class="filters">
-                <button class="filter-button active">Все</button>
-                <button class="filter-button">Высокий</button>
-                <button class="filter-button">Средний</button>
-                <button class="filter-button">Низкий</button>
+        <section class="crm-section" data-section-page="dashboard">
+            <div class="section-placeholder">
+                <div class="section-placeholder-badge">Рабочий стол</div>
+                <h2>Общий обзор CRM</h2>
+                <p>Здесь позже появятся сводка по задачам, клиентам, сделкам, просроченным действиям и активности
+                    команды.</p>
             </div>
         </section>
 
-        <section class="board">
-            <div class="column" data-status="todo">
-                <div class="column-header">
-                    <h2>Очередь</h2>
-                    <span>0</span>
+        <section class="crm-section active" data-section-page="tasks">
+            <section class="stats-grid">
+                <article class="stat-card">
+                    <div class="stat-label">Прогресс по задачам</div>
+                    <div class="stat-value">33%</div>
+                    <div class="stat-text">2 из 6 задач выполнено</div>
+                </article>
+
+                <article class="stat-card">
+                    <div class="stat-label">В работе</div>
+                    <div class="stat-value">43 ч.</div>
+                    <div class="stat-text">Плановая нагрузка команды</div>
+                </article>
+
+                <article class="stat-card">
+                    <div class="stat-label">Майлстоуны</div>
+                    <div class="stat-value">65%</div>
+                    <div class="stat-text">Закрыто ключевых этапов</div>
+                </article>
+
+                <article class="create-card">
+                    <div class="create-title">+ Создать задачу</div>
+                    <div class="create-text">Добавьте новую задачу в выбранный проект</div>
+                </article>
+            </section>
+
+            <section class="toolbar">
+                <input
+                        class="search-input"
+                        type="text"
+                        placeholder="Поиск по названию, описанию или статусу..."
+                >
+
+                <div class="filters">
+                    <button class="filter-button active">Все</button>
+                    <button class="filter-button">Высокий</button>
+                    <button class="filter-button">Средний</button>
+                    <button class="filter-button">Низкий</button>
+                </div>
+            </section>
+
+            <section class="board">
+                <div class="column" data-status="todo">
+                    <div class="column-header">
+                        <h2>Очередь</h2>
+                        <span>0</span>
+                    </div>
+
+                    <button class="add-column-button">+ Добавить в эту колонку</button>
                 </div>
 
-                <button class="add-column-button">+ Добавить в эту колонку</button>
+                <div class="column" data-status="in_progress">
+                    <div class="column-header">
+                        <h2>В работе</h2>
+                        <span>0</span>
+                    </div>
+
+                    <button class="add-column-button">+ Добавить в эту колонку</button>
+                </div>
+
+                <div class="column" data-status="cancelled">
+                    <div class="column-header">
+                        <h2>Отменено</h2>
+                        <span>0</span>
+                    </div>
+
+                    <button class="add-column-button">+ Добавить в эту колонку</button>
+                </div>
+
+                <div class="column" data-status="done">
+                    <div class="column-header">
+                        <h2>Выполнено</h2>
+                        <span>0</span>
+                    </div>
+
+                    <button class="add-column-button">+ Добавить в эту колонку</button>
+                </div>
+            </section>
+        </section>
+
+        <section class="crm-section" data-section-page="clients">
+            <div class="section-placeholder">
+                <div class="section-placeholder-badge">Клиенты</div>
+                <h2>База клиентов</h2>
+                <p>Здесь будет список клиентов, контакты, компании, история общения и быстрые действия.</p>
             </div>
+        </section>
 
-            <div class="column" data-status="in_progress">
-                <div class="column-header">
-                    <h2>В работе</h2>
-                    <span>0</span>
-                </div>
-
-                <button class="add-column-button">+ Добавить в эту колонку</button>
+        <section class="crm-section" data-section-page="deals">
+            <div class="section-placeholder">
+                <div class="section-placeholder-badge">Сделки</div>
+                <h2>Воронка продаж</h2>
+                <p>Здесь будет CRM-воронка: новые заявки, переговоры, коммерческое предложение, оплата и закрытые
+                    сделки.</p>
             </div>
+        </section>
 
-            <div class="column" data-status="cancelled">
-                <div class="column-header">
-                    <h2>Отменено</h2>
-                    <span>0</span>
-                </div>
-
-                <button class="add-column-button">+ Добавить в эту колонку</button>
+        <section class="crm-section" data-section-page="projects">
+            <div class="section-placeholder">
+                <div class="section-placeholder-badge">Проекты</div>
+                <h2>Проекты и рабочие пространства</h2>
+                <p>Здесь будет управление проектами, участниками, ролями и настройками рабочих процессов.</p>
             </div>
+        </section>
 
-            <div class="column" data-status="done">
-                <div class="column-header">
-                    <h2>Выполнено</h2>
-                    <span>0</span>
-                </div>
+        <section class="crm-section" data-section-page="team">
+            <div class="section-placeholder">
+                <div class="section-placeholder-badge">Команда</div>
+                <h2>Команда</h2>
+                <p>Здесь будет список сотрудников, роли, нагрузка, активность и права доступа.</p>
+            </div>
+        </section>
 
-                <button class="add-column-button">+ Добавить в эту колонку</button>
+        <section class="crm-section" data-section-page="analytics">
+            <div class="section-placeholder">
+                <div class="section-placeholder-badge">Аналитика</div>
+                <h2>Аналитика CRM</h2>
+                <p>Здесь будут графики, отчёты, конверсия, задачи в работе и эффективность команды.</p>
+            </div>
+        </section>
+
+        <section class="crm-section" data-section-page="settings">
+            <div class="section-placeholder">
+                <div class="section-placeholder-badge">Настройки</div>
+                <h2>Настройки системы</h2>
+                <p>Здесь будут настройки профиля, темы, уведомлений, ролей, интеграций и рабочих пространств.</p>
             </div>
         </section>
     </main>
