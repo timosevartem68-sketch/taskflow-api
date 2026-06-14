@@ -20,7 +20,7 @@
 
             <div class="header-actions">
                 <button class="ghost-button">Документация</button>
-                <button class="primary-button">Создать задачу</button>
+                <button id="create-task-button" class="primary-button">Создать задачу</button>
             </div>
         </header>
 
@@ -72,7 +72,7 @@
                         <span>1</span>
                     </div>
 
-                    <article class="task-card yellow">
+                    <article class="task-card yellow" data-priority="medium">
                         <div class="task-category">Backend</div>
                         <h3>Сделать проверку assignee_id</h3>
                         <p>Исполнитель задачи должен быть участником рабочего пространства.</p>
@@ -101,7 +101,7 @@
                         <span>2</span>
                     </div>
 
-                    <article class="task-card red">
+                    <article class="task-card red" data-priority="high">
                         <div class="task-category">API</div>
                         <h3>Добавить permission-тесты</h3>
                         <p>Проверить права owner, admin, member и viewer на уровне API.</p>
@@ -121,7 +121,7 @@
                         </div>
                     </article>
 
-                    <article class="task-card red">
+                    <article class="task-card red" data-priority="high">
                         <div class="task-category">Docker</div>
                         <h3>Улучшить production-настройки</h3>
                         <p>Добавить отдельные настройки для local, test и production окружений.</p>
@@ -150,7 +150,7 @@
                         <span>1</span>
                     </div>
 
-                    <article class="task-card purple">
+                    <article class="task-card purple" data-priority="medium">
                         <div class="task-category">Frontend</div>
                         <h3>Собрать HTML/CSS макет доски</h3>
                         <p>Сделать первый статичный интерфейс в стиле Kanban.</p>
@@ -179,7 +179,7 @@
                         <span>2</span>
                     </div>
 
-                    <article class="task-card green">
+                    <article class="task-card green" data-priority="high">
                         <div class="task-category">CI/CD</div>
                         <h3>Настроить GitHub Actions</h3>
                         <p>Автоматический запуск pytest и проверка Docker build после push.</p>
@@ -199,7 +199,7 @@
                         </div>
                     </article>
 
-                    <article class="task-card blue">
+                    <article class="task-card blue" data-priority="low">
                         <div class="task-category">Backend</div>
                         <h3>Добавить Docker Compose</h3>
                         <p>Запуск API и PostgreSQL одной командой через Docker.</p>
@@ -224,5 +224,7 @@
             </section>
         </main>
     </div>
+
+    <script src="app.js"></script>
 </body>
 </html>
