@@ -87,7 +87,13 @@ function showAppPage(user) {
     authScreen.classList.add("hidden");
     appPage.classList.remove("hidden");
 
-    currentUser.innerText = user.full_name || user.email;
+    const userName = user.full_name || user.email;
+    const firstLetter = userName.slice(0, 1).toUpperCase();
+
+    currentUser.innerHTML = `
+        <span class="current-user-avatar">${firstLetter}</span>
+        <span class="current-user-name">${escapeHtml(userName)}</span>
+    `;
 }
 
 function showAuthMessage(message, type = "error") {
