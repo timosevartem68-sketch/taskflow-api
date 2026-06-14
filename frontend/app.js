@@ -1,4 +1,4 @@
-console.log("TaskFlow JS loaded");
+console.log("MarsDesk JS loaded");
 
 const API_URL = "http://127.0.0.1:8000/api/v1";
 
@@ -382,7 +382,7 @@ async function getOrCreateProject(workspaceId) {
         body: JSON.stringify({
             workspace_id: workspaceId,
             name: "Основной проект",
-            description: "Первый проект в TaskFlow CRM",
+            description: "Первый проект в MarsDesk CRM",
         }),
     });
 }
