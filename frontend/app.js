@@ -56,7 +56,9 @@ const clientEmailInput = document.querySelector("#client-email");
 const clientSourceInput = document.querySelector("#client-source");
 const clientStatusInput = document.querySelector("#client-status");
 const clientNoteInput = document.querySelector("#client-note");
-
+const clientModalTitle = document.querySelector("#client-modal-title");
+const clientModalSubtitle = document.querySelector("#client-modal-subtitle");
+const clientSubmitButton = document.querySelector("#client-submit-button");
 const clientSearchInput = document.querySelector("#client-search-input");
 const clientStatusFilter = document.querySelector("#client-status-filter");
 const clientsList = document.querySelector("#clients-list");
@@ -72,6 +74,7 @@ let activePriority = "all";
 let currentWorkspace = null;
 let currentProject = null;
 let clients = [];
+let editingClientId = null;
 
 /*
     localStorage - это маленькое хранилище в браузере.
@@ -741,9 +744,36 @@ async function loadClientsFromApi() {
     renderClients();
 }
 
-function openClientModal() {
-    if (!clientModal) {
+function openClientModal(client = null) {
+    if (!clientModal || !clientForm) {
         return;
+    }
+
+    clientForm.reset();
+
+    if (client) {
+        editingClientId = client.id;
+
+        clientModalTitle.innerText = "Изменить клиента";
+        clientModalSubtitle.innerText = "Обновите данные клиента и сохраните изменения";
+        clientSubmitButton.innerText = "Сохранить изменения";
+
+        clientFullNameInput.value = client.fullName || "";
+        clientCompanyInput.value = client.company || "";
+        clientPhoneInput.value = client.phone || "";
+        clientEmailInput.value = client.email || "";
+        clientSourceInput.value = client.source || "Сайт";
+        clientStatusInput.value = client.status || "new";
+        clientNoteInput.value = client.note || "";
+    } else {
+        editingClientId = null;
+
+        clientModalTitle.innerText = "Добавить клиента";
+        clientModalSubtitle.innerText = "Заполните основные данные клиента для CRM-базы";
+        clientSubmitButton.innerText = "Сохранить клиента";
+
+        clientSourceInput.value = "Сайт";
+        clientStatusInput.value = "new";
     }
 
     clientModal.classList.remove("hidden");
@@ -757,6 +787,12 @@ function closeClientModal() {
 
     clientModal.classList.add("hidden");
     clientForm.reset();
+
+    editingClientId = null;
+
+    clientModalTitle.innerText = "Добавить клиента";
+    clientModalSubtitle.innerText = "Заполните основные данные клиента для CRM-базы";
+    clientSubmitButton.innerText = "Сохранить клиента";
 }
 
 function getClientStatusLabel(status) {
@@ -810,6 +846,34 @@ async function createClientFromForm() {
     });
 
     clients.unshift(normalizeClientFromApi(createdClient));
+    renderClients();
+}
+
+async function updateClientFromForm(clientId) {
+    const updatedClient = await requestJson(`${API_URL}/clients/${clientId}`, {
+        method: "PATCH",
+        headers: getJsonAuthHeaders(),
+        body: JSON.stringify({
+            full_name: clientFullNameInput.value.trim(),
+            company: clientCompanyInput.value.trim() || null,
+            phone: clientPhoneInput.value.trim() || null,
+            email: clientEmailInput.value.trim() || null,
+            source: clientSourceInput.value || null,
+            status: clientStatusInput.value,
+            note: clientNoteInput.value.trim() || null,
+        }),
+    });
+
+    const normalizedClient = normalizeClientFromApi(updatedClient);
+
+    clients = clients.map(function (client) {
+        if (client.id === clientId) {
+            return normalizedClient;
+        }
+
+        return client;
+    });
+
     renderClients();
 }
 
@@ -892,10 +956,22 @@ function renderClients() {
                         <p class="client-note">${escapeHtml(client.note || "Заметка пока не добавлена")}</p>
 
                         <div class="client-actions">
-                            <button class="ghost-button client-delete-button" type="button" data-client-id="${client.id}">
-                                Удалить
-                            </button>
-                        </div>
+    <button
+        class="ghost-button client-edit-button"
+        type="button"
+        data-client-id="${client.id}"
+    >
+        Изменить
+    </button>
+
+    <button
+        class="ghost-button client-delete-button"
+        type="button"
+        data-client-id="${client.id}"
+    >
+        Удалить
+    </button>
+</div>
                     </article>
                 `;
             })
@@ -907,7 +983,25 @@ function renderClients() {
 }
 
 function bindClientActionButtons() {
+    const editButtons = document.querySelectorAll(".client-edit-button");
     const deleteButtons = document.querySelectorAll(".client-delete-button");
+
+    editButtons.forEach(function (button) {
+        button.addEventListener("click", function () {
+            const clientId = Number(button.dataset.clientId);
+
+            const client = clients.find(function (item) {
+                return item.id === clientId;
+            });
+
+            if (!client) {
+                alert("Клиент не найден");
+                return;
+            }
+
+            openClientModal(client);
+        });
+    });
 
     deleteButtons.forEach(function (button) {
         button.addEventListener("click", async function () {
@@ -1127,14 +1221,18 @@ if (clientForm) {
         event.preventDefault();
 
         try {
-            await createClientFromForm();
+            if (editingClientId === null) {
+                await createClientFromForm();
+            } else {
+                await updateClientFromForm(editingClientId);
+            }
+
             closeClientModal();
         } catch (error) {
             alert(error.message);
         }
     });
 }
-
 if (clientSearchInput) {
     clientSearchInput.addEventListener("input", function () {
         renderClients();

@@ -290,8 +290,8 @@
                 <select id="client-status-filter" class="client-filter-select">
                     <option value="all">Все статусы</option>
                     <option value="new">Новый</option>
-                    <option value="in_work">В работе</option>
-                    <option value="loyal">Постоянный</option>
+                    <option value="in_progress">В работе</option>
+                    <option value="active">Активный</option>
                     <option value="lost">Потерянный</option>
                 </select>
             </section>
@@ -500,32 +500,58 @@
     <div class="modal">
         <div class="modal-header">
             <div>
-                <h2>Добавить клиента</h2>
-                <p>Заполните основные данные клиента для CRM-базы</p>
+                <h2 id="client-modal-title">Добавить клиента</h2>
+                <p id="client-modal-subtitle">
+                    Заполните основные данные клиента для CRM-базы
+                </p>
             </div>
 
-            <button id="close-client-modal-button" class="modal-close" type="button">×</button>
+            <button
+                    id="close-client-modal-button"
+                    class="modal-close"
+                    type="button"
+                    aria-label="Закрыть"
+            >
+                ×
+            </button>
         </div>
 
         <form id="client-form" class="task-form">
             <label>
                 Имя клиента
-                <input id="client-full-name" type="text" placeholder="Например: Иван Петров" required>
+                <input
+                        id="client-full-name"
+                        type="text"
+                        placeholder="Например: Иван Петров"
+                        required
+                >
             </label>
 
             <label>
                 Компания
-                <input id="client-company" type="text" placeholder="Например: СтройДом">
+                <input
+                        id="client-company"
+                        type="text"
+                        placeholder="Например: СтройДом"
+                >
             </label>
 
             <label>
                 Телефон
-                <input id="client-phone" type="tel" placeholder="+7 999 123-45-67">
+                <input
+                        id="client-phone"
+                        type="tel"
+                        placeholder="+7 999 123-45-67"
+                >
             </label>
 
             <label>
                 Email
-                <input id="client-email" type="email" placeholder="client@example.com">
+                <input
+                        id="client-email"
+                        type="email"
+                        placeholder="client@example.com"
+                >
             </label>
 
             <label>
@@ -543,23 +569,40 @@
                 Статус
                 <select id="client-status">
                     <option value="new">Новый</option>
-                    <option value="in_work">В работе</option>
-                    <option value="loyal">Постоянный</option>
+                    <option value="in_progress">В работе</option>
+                    <option value="active">Активный</option>
                     <option value="lost">Потерянный</option>
                 </select>
             </label>
 
             <label>
                 Заметка
-                <textarea id="client-note" placeholder="Кратко опишите ситуацию, интерес или следующий шаг"></textarea>
+                <textarea
+                        id="client-note"
+                        placeholder="Кратко опишите ситуацию, интерес или следующий шаг"
+                ></textarea>
             </label>
 
             <div class="modal-actions">
-                <button id="cancel-client-button" class="ghost-button" type="button">Отмена</button>
-                <button class="primary-button" type="submit">Сохранить клиента</button>
+                <button
+                        id="cancel-client-button"
+                        class="ghost-button"
+                        type="button"
+                >
+                    Отмена
+                </button>
+
+                <button
+                        id="client-submit-button"
+                        class="primary-button"
+                        type="submit"
+                >
+                    Сохранить клиента
+                </button>
             </div>
         </form>
     </div>
+</div>
 </div>
 <script src="app.js"></script>
 
