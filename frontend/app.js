@@ -859,10 +859,35 @@ async function updateClientFromForm(clientId) {
             phone: clientPhoneInput.value.trim() || null,
             email: clientEmailInput.value.trim() || null,
             source: clientSourceInput.value || null,
-            status: clientStatusInput.value,
+            status: normalizeClientStatusForApi(clientStatusInput.value),
             note: clientNoteInput.value.trim() || null,
         }),
     });
+
+    const normalizedClient = normalizeClientFromApi(updatedClient);
+
+    clients = clients.map(function (client) {
+        if (client.id === clientId) {
+            return normalizedClient;
+        }
+
+        return client;
+    });
+
+    renderClients();
+}
+
+async function updateClientStatus(clientId, status) {
+    const updatedClient = await requestJson(
+        `${API_URL}/clients/${clientId}/status`,
+        {
+            method: "PATCH",
+            headers: getJsonAuthHeaders(),
+            body: JSON.stringify({
+                status: normalizeClientStatusForApi(status),
+            }),
+        }
+    );
 
     const normalizedClient = normalizeClientFromApi(updatedClient);
 
@@ -949,29 +974,44 @@ function renderClients() {
                             <div><strong>Источник:</strong> ${escapeHtml(client.source || "Не указан")}</div>
                         </div>
 
-                        <div class="client-status client-status--${client.status}">
-                            ${escapeHtml(getClientStatusLabel(client.status))}
-                        </div>
+                        <select
+                            class="client-status-select client-status--${client.status}"
+                            data-client-id="${client.id}"
+                            aria-label="Статус клиента"
+                        >
+                            <option value="new" ${client.status === "new" ? "selected" : ""}>
+                                Новый
+                            </option>
+                            <option value="in_progress" ${client.status === "in_progress" ? "selected" : ""}>
+                                В работе
+                            </option>
+                            <option value="active" ${client.status === "active" ? "selected" : ""}>
+                                Активный
+                            </option>
+                            <option value="lost" ${client.status === "lost" ? "selected" : ""}>
+                                Потерянный
+                            </option>
+                        </select>
 
                         <p class="client-note">${escapeHtml(client.note || "Заметка пока не добавлена")}</p>
 
                         <div class="client-actions">
-    <button
-        class="ghost-button client-edit-button"
-        type="button"
-        data-client-id="${client.id}"
-    >
-        Изменить
-    </button>
+                            <button
+                                class="ghost-button client-edit-button"
+                                type="button"
+                                data-client-id="${client.id}"
+                            >
+                                Изменить
+                            </button>
 
-    <button
-        class="ghost-button client-delete-button"
-        type="button"
-        data-client-id="${client.id}"
-    >
-        Удалить
-    </button>
-</div>
+                            <button
+                                class="ghost-button client-delete-button"
+                                type="button"
+                                data-client-id="${client.id}"
+                            >
+                                Удалить
+                            </button>
+                        </div>
                     </article>
                 `;
             })
@@ -984,6 +1024,7 @@ function renderClients() {
 
 function bindClientActionButtons() {
     const editButtons = document.querySelectorAll(".client-edit-button");
+    const statusSelects = document.querySelectorAll(".client-status-select");
     const deleteButtons = document.querySelectorAll(".client-delete-button");
 
     editButtons.forEach(function (button) {
@@ -1000,6 +1041,22 @@ function bindClientActionButtons() {
             }
 
             openClientModal(client);
+        });
+    });
+
+    statusSelects.forEach(function (select) {
+        select.addEventListener("change", async function () {
+            const clientId = Number(select.dataset.clientId);
+            const newStatus = select.value;
+
+            select.disabled = true;
+
+            try {
+                await updateClientStatus(clientId, newStatus);
+            } catch (error) {
+                alert(error.message);
+                await loadClientsFromApi();
+            }
         });
     });
 
@@ -1233,6 +1290,7 @@ if (clientForm) {
         }
     });
 }
+
 if (clientSearchInput) {
     clientSearchInput.addEventListener("input", function () {
         renderClients();
