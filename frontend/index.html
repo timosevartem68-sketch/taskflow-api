@@ -6,7 +6,7 @@
     <title>MarsDesk CRM</title>
     <link rel="stylesheet" href="styles.css">
 </head>
-<body>
+<body class="marsdesk-theme">
 
 <section id="auth-screen" class="auth-screen">
     <div class="auth-card">
@@ -294,6 +294,11 @@
                     <option value="active">Активный</option>
                     <option value="lost">Потерянный</option>
                 </select>
+
+                <select id="client-responsible-filter" class="client-filter-select">
+                    <option value="all">Все ответственные</option>
+                    <option value="unassigned">Не назначен</option>
+                </select>
             </section>
 
             <section id="clients-list" class="clients-list">
@@ -362,31 +367,67 @@
         </section>
 
         <section class="crm-section" data-section-page="team">
-            <div class="section-placeholder">
-                <div class="section-placeholder-badge">Команда</div>
-                <h2>Команда</h2>
-                <p>Здесь будет список сотрудников, роли, нагрузка, активность и права доступа.</p>
+            <div class="crm-page-head">
+                <div>
+                    <div class="section-placeholder-badge">Команда</div>
+                    <h2>Команда MarsDesk</h2>
+                    <p>Участники рабочего пространства, их роли и количество назначенных клиентов.</p>
+                </div>
 
-                <div class="placeholder-grid">
-                    <article class="placeholder-card">
-                        <span>Сотрудники</span>
-                        <strong>Пользователи системы</strong>
-                        <p>Добавление сотрудников, назначение ролей и рабочих пространств.</p>
-                    </article>
-
-                    <article class="placeholder-card">
-                        <span>Нагрузка</span>
-                        <strong>Кто чем занят</strong>
-                        <p>Покажем активные задачи и перегруз сотрудников.</p>
-                    </article>
-
-                    <article class="placeholder-card">
-                        <span>Активность</span>
-                        <strong>История действий</strong>
-                        <p>Будет видно, кто создал задачу, изменил статус или закрыл сделку.</p>
-                    </article>
+                <div class="team-head-note">
+                    Данные загружаются из рабочего пространства
                 </div>
             </div>
+
+            <section class="team-stats-grid">
+                <article class="team-stat-card">
+                    <span>Всего сотрудников</span>
+                    <strong id="team-total-count">0</strong>
+                    <p>Участников в пространстве</p>
+                </article>
+
+                <article class="team-stat-card">
+                    <span>Руководители</span>
+                    <strong id="team-manager-count">0</strong>
+                    <p>Владельцы и администраторы</p>
+                </article>
+
+                <article class="team-stat-card">
+                    <span>Исполнители</span>
+                    <strong id="team-member-count">0</strong>
+                    <p>Участники и наблюдатели</p>
+                </article>
+
+                <article class="team-stat-card">
+                    <span>Распределено клиентов</span>
+                    <strong id="team-assigned-count">0</strong>
+                    <p>Клиентов с ответственным</p>
+                </article>
+            </section>
+
+            <section class="team-toolbar">
+                <input
+                    id="team-search-input"
+                    class="search-input"
+                    type="text"
+                    placeholder="Поиск сотрудника по имени или email..."
+                >
+
+                <select id="team-role-filter" class="client-filter-select">
+                    <option value="all">Все роли</option>
+                    <option value="owner">Владелец</option>
+                    <option value="admin">Администратор</option>
+                    <option value="member">Участник</option>
+                    <option value="viewer">Наблюдатель</option>
+                </select>
+            </section>
+
+            <section id="team-list" class="team-list">
+                <div class="empty-state">
+                    <h3>Сотрудники загружаются</h3>
+                    <p>Список появится после загрузки рабочего пространства.</p>
+                </div>
+            </section>
         </section>
 
         <section class="crm-section" data-section-page="analytics">
@@ -576,6 +617,13 @@
             </label>
 
             <label>
+                Ответственный
+                <select id="client-responsible">
+                    <option value="">Не назначен</option>
+                </select>
+            </label>
+
+            <label>
                 Заметка
                 <textarea
                         id="client-note"
@@ -602,7 +650,6 @@
             </div>
         </form>
     </div>
-</div>
 </div>
 <script src="app.js"></script>
 

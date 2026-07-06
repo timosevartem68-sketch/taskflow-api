@@ -55,12 +55,14 @@ const clientPhoneInput = document.querySelector("#client-phone");
 const clientEmailInput = document.querySelector("#client-email");
 const clientSourceInput = document.querySelector("#client-source");
 const clientStatusInput = document.querySelector("#client-status");
+const clientResponsibleInput = document.querySelector("#client-responsible");
 const clientNoteInput = document.querySelector("#client-note");
 const clientModalTitle = document.querySelector("#client-modal-title");
 const clientModalSubtitle = document.querySelector("#client-modal-subtitle");
 const clientSubmitButton = document.querySelector("#client-submit-button");
 const clientSearchInput = document.querySelector("#client-search-input");
 const clientStatusFilter = document.querySelector("#client-status-filter");
+const clientResponsibleFilter = document.querySelector("#client-responsible-filter");
 const clientsList = document.querySelector("#clients-list");
 
 const clientTotalCount = document.querySelector("#client-total-count");
@@ -68,12 +70,22 @@ const clientActiveCount = document.querySelector("#client-active-count");
 const clientNewCount = document.querySelector("#client-new-count");
 const clientLostCount = document.querySelector("#client-lost-count");
 
+// Раздел команды
+const teamSearchInput = document.querySelector("#team-search-input");
+const teamRoleFilter = document.querySelector("#team-role-filter");
+const teamList = document.querySelector("#team-list");
+const teamTotalCount = document.querySelector("#team-total-count");
+const teamManagerCount = document.querySelector("#team-manager-count");
+const teamMemberCount = document.querySelector("#team-member-count");
+const teamAssignedCount = document.querySelector("#team-assigned-count");
+
 // Состояние приложения
 let authMode = "login";
 let activePriority = "all";
 let currentWorkspace = null;
 let currentProject = null;
 let clients = [];
+let workspaceMembers = [];
 let editingClientId = null;
 
 /*
@@ -343,6 +355,7 @@ async function loadDashboardData() {
     workspaceContext.innerText = `${currentWorkspace.name} · ${currentProject.name}`;
 
     await loadTasks();
+    await loadWorkspaceMembers();
     await loadClientsFromApi();
 }
 
@@ -680,6 +693,131 @@ function updateStats() {
 }
 // -------------------- CLIENTS --------------------
 
+function normalizeWorkspaceMember(member) {
+    return {
+        id: member.id,
+        workspaceId: member.workspace_id,
+        userId: member.user_id,
+        role: member.role,
+        fullName: member.full_name,
+        email: member.email,
+        createdAt: member.created_at,
+    };
+}
+
+function getWorkspaceMemberLabel(member) {
+    if (!member) {
+        return "Не назначен";
+    }
+
+    return member.fullName || member.email || `Пользователь #${member.userId}`;
+}
+
+function getWorkspaceMemberByUserId(userId) {
+    if (userId === null || userId === undefined) {
+        return null;
+    }
+
+    return workspaceMembers.find(function (member) {
+        return member.userId === Number(userId);
+    }) || null;
+}
+
+function getResponsibleLabel(userId) {
+    return getWorkspaceMemberLabel(getWorkspaceMemberByUserId(userId));
+}
+
+function parseResponsibleId(value) {
+    if (value === "" || value === null || value === undefined) {
+        return null;
+    }
+
+    const responsibleId = Number(value);
+
+    return Number.isInteger(responsibleId) && responsibleId > 0
+        ? responsibleId
+        : null;
+}
+
+function buildResponsibleOptions(selectedUserId = null, mode = "form") {
+    const selectedValue = selectedUserId === null || selectedUserId === undefined
+        ? ""
+        : String(selectedUserId);
+
+    let options = "";
+
+    if (mode === "filter") {
+        options += '<option value="all">Все ответственные</option>';
+        options += '<option value="unassigned">Не назначен</option>';
+    } else {
+        options += `<option value="" ${selectedValue === "" ? "selected" : ""}>Не назначен</option>`;
+    }
+
+    options += workspaceMembers
+        .map(function (member) {
+            const value = String(member.userId);
+            const selected = value === selectedValue ? "selected" : "";
+            const label = getWorkspaceMemberLabel(member);
+
+            return `<option value="${value}" ${selected}>${escapeHtml(label)}</option>`;
+        })
+        .join("");
+
+    return options;
+}
+
+function refreshResponsibleControls() {
+    if (clientResponsibleInput) {
+        const selectedValue = clientResponsibleInput.value || "";
+        clientResponsibleInput.innerHTML = buildResponsibleOptions(
+            parseResponsibleId(selectedValue),
+            "form"
+        );
+    }
+
+    if (clientResponsibleFilter) {
+        const selectedValue = clientResponsibleFilter.value || "all";
+        clientResponsibleFilter.innerHTML = buildResponsibleOptions(null, "filter");
+
+        const hasSelectedOption = Array.from(clientResponsibleFilter.options)
+            .some(function (option) {
+                return option.value === selectedValue;
+            });
+
+        clientResponsibleFilter.value = hasSelectedOption
+            ? selectedValue
+            : "all";
+    }
+}
+
+async function loadWorkspaceMembers() {
+    if (!currentWorkspace) {
+        workspaceMembers = [];
+        refreshResponsibleControls();
+        return;
+    }
+
+    const data = await requestJson(
+        `${API_URL}/workspaces/${currentWorkspace.id}/members`,
+        {
+            method: "GET",
+            headers: getAuthHeaders(),
+        }
+    );
+
+    workspaceMembers = normalizeList(data)
+        .map(function (member) {
+            return normalizeWorkspaceMember(member);
+        })
+        .sort(function (firstMember, secondMember) {
+            return getWorkspaceMemberLabel(firstMember)
+                .localeCompare(getWorkspaceMemberLabel(secondMember), "ru");
+        });
+
+    refreshResponsibleControls();
+    renderTeam();
+}
+
 function normalizeClientStatusForApi(status) {
     if (status === "in_work") {
         return "in_progress";
@@ -764,6 +902,13 @@ function openClientModal(client = null) {
         clientEmailInput.value = client.email || "";
         clientSourceInput.value = client.source || "Сайт";
         clientStatusInput.value = client.status || "new";
+        clientResponsibleInput.innerHTML = buildResponsibleOptions(
+            client.responsibleId,
+            "form"
+        );
+        clientResponsibleInput.value = client.responsibleId === null
+            ? ""
+            : String(client.responsibleId);
         clientNoteInput.value = client.note || "";
     } else {
         editingClientId = null;
@@ -774,6 +919,8 @@ function openClientModal(client = null) {
 
         clientSourceInput.value = "Сайт";
         clientStatusInput.value = "new";
+        clientResponsibleInput.innerHTML = buildResponsibleOptions(null, "form");
+        clientResponsibleInput.value = "";
     }
 
     clientModal.classList.remove("hidden");
@@ -841,7 +988,7 @@ async function createClientFromForm() {
             source: clientSourceInput.value || null,
             status: normalizeClientStatusForApi(clientStatusInput.value),
             note: clientNoteInput.value.trim() || null,
-            responsible_id: null,
+            responsible_id: parseResponsibleId(clientResponsibleInput.value),
         }),
     });
 
@@ -861,6 +1008,7 @@ async function updateClientFromForm(clientId) {
             source: clientSourceInput.value || null,
             status: normalizeClientStatusForApi(clientStatusInput.value),
             note: clientNoteInput.value.trim() || null,
+            responsible_id: parseResponsibleId(clientResponsibleInput.value),
         }),
     });
 
@@ -902,6 +1050,31 @@ async function updateClientStatus(clientId, status) {
     renderClients();
 }
 
+async function updateClientResponsible(clientId, responsibleId) {
+    const updatedClient = await requestJson(
+        `${API_URL}/clients/${clientId}/responsible`,
+        {
+            method: "PATCH",
+            headers: getJsonAuthHeaders(),
+            body: JSON.stringify({
+                responsible_id: responsibleId,
+            }),
+        }
+    );
+
+    const normalizedClient = normalizeClientFromApi(updatedClient);
+
+    clients = clients.map(function (client) {
+        if (client.id === clientId) {
+            return normalizedClient;
+        }
+
+        return client;
+    });
+
+    renderClients();
+}
+
 async function deleteClient(clientId) {
     const confirmed = confirm("Удалить клиента? Это действие нельзя отменить.");
 
@@ -926,74 +1099,126 @@ function renderClients() {
         return;
     }
 
-    const searchValue = clientSearchInput ? clientSearchInput.value.toLowerCase().trim() : "";
+    const searchValue = clientSearchInput
+        ? clientSearchInput.value.toLowerCase().trim()
+        : "";
+
     const statusValue = clientStatusFilter
         ? normalizeClientStatusForFrontend(clientStatusFilter.value)
         : "all";
 
+    const responsibleValue = clientResponsibleFilter
+        ? clientResponsibleFilter.value
+        : "all";
+
     const filteredClients = clients.filter(function (client) {
+        const responsibleLabel = getResponsibleLabel(client.responsibleId);
+
         const clientText = [
             client.fullName,
             client.company,
             client.phone,
             client.email,
             client.source,
+            responsibleLabel,
             getClientStatusLabel(client.status),
         ].join(" ").toLowerCase();
 
         const matchesSearch = clientText.includes(searchValue);
         const matchesStatus = statusValue === "all" || client.status === statusValue;
 
-        return matchesSearch && matchesStatus;
+        let matchesResponsible = true;
+
+        if (responsibleValue === "unassigned") {
+            matchesResponsible = client.responsibleId === null;
+        } else if (responsibleValue !== "all") {
+            matchesResponsible = client.responsibleId === Number(responsibleValue);
+        }
+
+        return matchesSearch && matchesStatus && matchesResponsible;
     });
 
     if (filteredClients.length === 0) {
         clientsList.innerHTML = `
-            <div class="empty-state">
+            <div class="empty-state md-animate-in">
                 <h3>Клиенты не найдены</h3>
-                <p>Попробуйте изменить поиск или добавьте нового клиента.</p>
+                <p>Попробуйте изменить фильтры или добавьте нового клиента.</p>
             </div>
         `;
     } else {
         clientsList.innerHTML = filteredClients
             .map(function (client) {
-                return `
-                    <article class="client-card">
-                        <div class="client-main">
-                            <div class="client-avatar">${escapeHtml(getClientAvatarLetter(client.fullName))}</div>
+                const responsibleName = getResponsibleLabel(client.responsibleId);
 
-                            <div>
+                return `
+                    <article class="client-card md-animate-in">
+                        <div class="client-main">
+                            <div class="client-avatar">
+                                ${escapeHtml(getClientAvatarLetter(client.fullName))}
+                            </div>
+
+                            <div class="client-identity">
                                 <div class="client-name">${escapeHtml(client.fullName)}</div>
-                                <div class="client-company">${escapeHtml(client.company || "Компания не указана")}</div>
+                                <div class="client-company">
+                                    ${escapeHtml(client.company || "Компания не указана")}
+                                </div>
                             </div>
                         </div>
 
                         <div class="client-contact">
-                            <div><strong>Телефон:</strong> ${escapeHtml(client.phone || "Не указан")}</div>
-                            <div><strong>Email:</strong> ${escapeHtml(client.email || "Не указан")}</div>
-                            <div><strong>Источник:</strong> ${escapeHtml(client.source || "Не указан")}</div>
+                            <div>
+                                <strong>Телефон</strong>
+                                <span>${escapeHtml(client.phone || "Не указан")}</span>
+                            </div>
+                            <div>
+                                <strong>Email</strong>
+                                <span>${escapeHtml(client.email || "Не указан")}</span>
+                            </div>
+                            <div>
+                                <strong>Источник</strong>
+                                <span>${escapeHtml(client.source || "Не указан")}</span>
+                            </div>
                         </div>
 
-                        <select
-                            class="client-status-select client-status--${client.status}"
-                            data-client-id="${client.id}"
-                            aria-label="Статус клиента"
-                        >
-                            <option value="new" ${client.status === "new" ? "selected" : ""}>
-                                Новый
-                            </option>
-                            <option value="in_progress" ${client.status === "in_progress" ? "selected" : ""}>
-                                В работе
-                            </option>
-                            <option value="active" ${client.status === "active" ? "selected" : ""}>
-                                Активный
-                            </option>
-                            <option value="lost" ${client.status === "lost" ? "selected" : ""}>
-                                Потерянный
-                            </option>
-                        </select>
+                        <div class="client-controls">
+                            <label class="client-control">
+                                <span>Статус</span>
+                                <select
+                                    class="client-status-select client-status--${client.status}"
+                                    data-client-id="${client.id}"
+                                    aria-label="Статус клиента"
+                                >
+                                    <option value="new" ${client.status === "new" ? "selected" : ""}>
+                                        Новый
+                                    </option>
+                                    <option value="in_progress" ${client.status === "in_progress" ? "selected" : ""}>
+                                        В работе
+                                    </option>
+                                    <option value="active" ${client.status === "active" ? "selected" : ""}>
+                                        Активный
+                                    </option>
+                                    <option value="lost" ${client.status === "lost" ? "selected" : ""}>
+                                        Потерянный
+                                    </option>
+                                </select>
+                            </label>
 
-                        <p class="client-note">${escapeHtml(client.note || "Заметка пока не добавлена")}</p>
+                            <label class="client-control">
+                                <span>Ответственный</span>
+                                <select
+                                    class="client-responsible-select"
+                                    data-client-id="${client.id}"
+                                    aria-label="Ответственный сотрудник"
+                                    title="${escapeHtml(responsibleName)}"
+                                >
+                                    ${buildResponsibleOptions(client.responsibleId, "form")}
+                                </select>
+                            </label>
+                        </div>
+
+                        <p class="client-note">
+                            ${escapeHtml(client.note || "Заметка пока не добавлена")}
+                        </p>
 
                         <div class="client-actions">
                             <button
@@ -1020,11 +1245,13 @@ function renderClients() {
 
     updateClientStats();
     bindClientActionButtons();
+    renderTeam();
 }
 
 function bindClientActionButtons() {
     const editButtons = document.querySelectorAll(".client-edit-button");
     const statusSelects = document.querySelectorAll(".client-status-select");
+    const responsibleSelects = document.querySelectorAll(".client-responsible-select");
     const deleteButtons = document.querySelectorAll(".client-delete-button");
 
     editButtons.forEach(function (button) {
@@ -1060,6 +1287,22 @@ function bindClientActionButtons() {
         });
     });
 
+    responsibleSelects.forEach(function (select) {
+        select.addEventListener("change", async function () {
+            const clientId = Number(select.dataset.clientId);
+            const responsibleId = parseResponsibleId(select.value);
+
+            select.disabled = true;
+
+            try {
+                await updateClientResponsible(clientId, responsibleId);
+            } catch (error) {
+                alert(error.message);
+                await loadClientsFromApi();
+            }
+        });
+    });
+
     deleteButtons.forEach(function (button) {
         button.addEventListener("click", async function () {
             const clientId = Number(button.dataset.clientId);
@@ -1071,6 +1314,158 @@ function bindClientActionButtons() {
             }
         });
     });
+}
+
+
+// -------------------- TEAM --------------------
+
+function getWorkspaceRoleLabel(role) {
+    if (role === "owner") {
+        return "Владелец";
+    }
+
+    if (role === "admin") {
+        return "Администратор";
+    }
+
+    if (role === "member") {
+        return "Участник";
+    }
+
+    if (role === "viewer") {
+        return "Наблюдатель";
+    }
+
+    return role || "Без роли";
+}
+
+function getWorkspaceRoleClass(role) {
+    const allowedRoles = ["owner", "admin", "member", "viewer"];
+
+    return allowedRoles.includes(role)
+        ? role
+        : "member";
+}
+
+function getAssignedClientsCount(userId) {
+    return clients.filter(function (client) {
+        return client.responsibleId === Number(userId);
+    }).length;
+}
+
+function getTeamMemberAvatarLetter(member) {
+    return getClientAvatarLetter(getWorkspaceMemberLabel(member));
+}
+
+function updateTeamStats() {
+    const total = workspaceMembers.length;
+
+    const managers = workspaceMembers.filter(function (member) {
+        return member.role === "owner" || member.role === "admin";
+    }).length;
+
+    const members = workspaceMembers.filter(function (member) {
+        return member.role === "member" || member.role === "viewer";
+    }).length;
+
+    const assignedClients = clients.filter(function (client) {
+        return client.responsibleId !== null;
+    }).length;
+
+    if (teamTotalCount) {
+        teamTotalCount.innerText = total;
+    }
+
+    if (teamManagerCount) {
+        teamManagerCount.innerText = managers;
+    }
+
+    if (teamMemberCount) {
+        teamMemberCount.innerText = members;
+    }
+
+    if (teamAssignedCount) {
+        teamAssignedCount.innerText = assignedClients;
+    }
+}
+
+function renderTeam() {
+    updateTeamStats();
+
+    if (!teamList) {
+        return;
+    }
+
+    const searchValue = teamSearchInput
+        ? teamSearchInput.value.toLowerCase().trim()
+        : "";
+
+    const roleValue = teamRoleFilter
+        ? teamRoleFilter.value
+        : "all";
+
+    const filteredMembers = workspaceMembers.filter(function (member) {
+        const memberText = [
+            member.fullName,
+            member.email,
+            getWorkspaceRoleLabel(member.role),
+        ].join(" ").toLowerCase();
+
+        const matchesSearch = memberText.includes(searchValue);
+        const matchesRole = roleValue === "all" || member.role === roleValue;
+
+        return matchesSearch && matchesRole;
+    });
+
+    if (filteredMembers.length === 0) {
+        teamList.innerHTML = `
+            <div class="empty-state md-animate-in">
+                <h3>Сотрудники не найдены</h3>
+                <p>Измените поиск или фильтр по роли.</p>
+            </div>
+        `;
+        return;
+    }
+
+    teamList.innerHTML = filteredMembers
+        .map(function (member) {
+            const memberName = getWorkspaceMemberLabel(member);
+            const roleLabel = getWorkspaceRoleLabel(member.role);
+            const roleClass = getWorkspaceRoleClass(member.role);
+            const assignedClients = getAssignedClientsCount(member.userId);
+
+            return `
+                <article class="team-member-card md-animate-in">
+                    <div class="team-member-main">
+                        <div class="team-member-avatar">
+                            ${escapeHtml(getTeamMemberAvatarLetter(member))}
+                        </div>
+
+                        <div class="team-member-identity">
+                            <h3>${escapeHtml(memberName)}</h3>
+                            <p>${escapeHtml(member.email || "Email не указан")}</p>
+                        </div>
+                    </div>
+
+                    <div class="team-role-badge team-role--${roleClass}">
+                        ${escapeHtml(roleLabel)}
+                    </div>
+
+                    <div class="team-member-metrics">
+                        <div>
+                            <span>Назначено клиентов</span>
+                            <strong>${assignedClients}</strong>
+                        </div>
+
+                        <div>
+                            <span>Добавлен</span>
+                            <strong>${escapeHtml(formatDate(member.createdAt))}</strong>
+                        </div>
+                    </div>
+                </article>
+            `;
+        })
+        .join("");
 }
 
 function updateClientStats() {
@@ -1135,6 +1530,8 @@ logoutButton.addEventListener("click", function () {
     removeToken();
     currentWorkspace = null;
     currentProject = null;
+    clients = [];
+    workspaceMembers = [];
     clearTaskCards();
     showAuthScreen();
 });
@@ -1303,6 +1700,24 @@ if (clientStatusFilter) {
     });
 }
 
+if (clientResponsibleFilter) {
+    clientResponsibleFilter.addEventListener("change", function () {
+        renderClients();
+    });
+}
+
+if (teamSearchInput) {
+    teamSearchInput.addEventListener("input", function () {
+        renderTeam();
+    });
+}
+
+if (teamRoleFilter) {
+    teamRoleFilter.addEventListener("change", function () {
+        renderTeam();
+    });
+}
+
 
 // -------------------- START --------------------
 
@@ -1311,4 +1726,5 @@ setAuthMode("login");
 updateColumnCounters();
 updateStats();
 updateClientStats();
+renderTeam();
 checkAuthOnStart();
