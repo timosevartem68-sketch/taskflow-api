@@ -4,7 +4,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import get_current_user
 from app.db.session import get_db
 from app.models.user import User
-from app.schemas.workspace import WorkspaceCreate, WorkspaceRead, WorkspaceUpdate
+from app.schemas.workspace import (
+    WorkspaceCreate,
+    WorkspaceMemberListItem,
+    WorkspaceRead,
+    WorkspaceUpdate,
+)
 from app.services.workspace_service import WorkspaceService
 
 
@@ -40,6 +45,23 @@ async def list_workspaces(
     workspace_service = WorkspaceService(db)
 
     return await workspace_service.list_workspaces_for_user(
+        current_user=current_user,
+    )
+
+
+@router.get(
+    "/{workspace_id}/members",
+    response_model=list[WorkspaceMemberListItem],
+)
+async def list_workspace_members(
+    workspace_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    workspace_service = WorkspaceService(db)
+
+    return await workspace_service.list_members(
+        workspace_id=workspace_id,
         current_user=current_user,
     )
 

@@ -44,3 +44,13 @@ class WorkspaceMemberAdd(BaseModel):
 
 class WorkspaceMemberUpdate(BaseModel):
     role: WorkspaceRole
+
+
+class WorkspaceMemberListItem(BaseModel):
+    id: int
+    workspace_id: int
+    user_id: int
+    role: WorkspaceRole
+    full_name: str | None = None
+    email: str
+    created_at: datetime

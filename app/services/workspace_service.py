@@ -146,3 +146,18 @@ class WorkspaceService:
         await self.db.refresh(member)
 
         return member
+
+    async def list_members(
+        self,
+        *,
+        workspace_id: int,
+        current_user: User,
+    ) -> list[dict]:
+        await self.get_workspace_for_user(
+            workspace_id=workspace_id,
+            current_user=current_user,
+        )
+
+        return await self.workspace_repository.list_members(
+            workspace_id=workspace_id,
+        )
