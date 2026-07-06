@@ -24,6 +24,14 @@ from app.schemas.workspace import (
     WorkspaceUpdate,
 )
 
+from app.schemas.deal import (
+    DealCreate,
+    DealRead,
+    DealResponsibleUpdate,
+    DealStageUpdate,
+    DealUpdate,
+)
+
 __all__ = [
     "ErrorResponse",
     "Page",
