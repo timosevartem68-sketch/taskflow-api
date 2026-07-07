@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -310,32 +311,143 @@
         </section>
 
         <section class="crm-section" data-section-page="deals">
-            <div class="section-placeholder">
-                <div class="section-placeholder-badge">Сделки</div>
-                <h2>Воронка продаж</h2>
-                <p>Здесь будет CRM-воронка: новые заявки, переговоры, коммерческое предложение, оплата и закрытые
-                    сделки.</p>
-
-                <div class="placeholder-grid">
-                    <article class="placeholder-card">
-                        <span>Новая заявка</span>
-                        <strong>Первичный контакт</strong>
-                        <p>Лид только попал в CRM и ждёт обработки.</p>
-                    </article>
-
-                    <article class="placeholder-card">
-                        <span>Переговоры</span>
-                        <strong>Обсуждение условий</strong>
-                        <p>Менеджер уточняет задачу, бюджет и сроки.</p>
-                    </article>
-
-                    <article class="placeholder-card">
-                        <span>Оплата</span>
-                        <strong>Финальный этап</strong>
-                        <p>Клиент готов оплатить или уже оплатил услугу.</p>
-                    </article>
+            <div class="crm-page-head">
+                <div>
+                    <div class="section-placeholder-badge">Сделки</div>
+                    <h2>Воронка продаж</h2>
+                    <p>Управляйте сделками, суммами, этапами, клиентами и ответственными сотрудниками.</p>
                 </div>
+
+                <button id="open-deal-modal-button" class="primary-button" type="button">
+                    + Добавить сделку
+                </button>
             </div>
+
+            <section class="deal-stats-grid">
+                <article class="deal-stat-card">
+                    <span>Всего сделок</span>
+                    <strong id="deal-total-count">0</strong>
+                    <p>Сделок в рабочем пространстве</p>
+                </article>
+
+                <article class="deal-stat-card">
+                    <span>Сумма воронки</span>
+                    <strong id="deal-pipeline-amount">0 ₽</strong>
+                    <p>Без успешных и проигранных</p>
+                </article>
+
+                <article class="deal-stat-card">
+                    <span>Успешно</span>
+                    <strong id="deal-won-amount">0 ₽</strong>
+                    <p>Сумма закрытых сделок</p>
+                </article>
+
+                <article class="deal-stat-card">
+                    <span>Проиграно</span>
+                    <strong id="deal-lost-count">0</strong>
+                    <p>Сделок без результата</p>
+                </article>
+            </section>
+
+            <section class="deals-toolbar">
+                <input
+                        id="deal-search-input"
+                        class="search-input"
+                        type="text"
+                        placeholder="Поиск по названию, клиенту, заметке или ответственному..."
+                >
+
+                <select id="deal-responsible-filter" class="client-filter-select">
+                    <option value="all">Все ответственные</option>
+                    <option value="unassigned">Не назначен</option>
+                </select>
+            </section>
+
+            <section id="deals-board" class="deals-board">
+                <article class="deal-column" data-deal-stage="new">
+                    <div class="deal-column-header">
+                        <div>
+                            <span class="deal-stage-dot deal-stage-dot--new"></span>
+                            <h3>Новая заявка</h3>
+                        </div>
+                        <strong data-deal-counter="new">0</strong>
+                    </div>
+                    <div class="deal-column-list" data-deal-list="new"></div>
+                    <button class="deal-add-button" type="button" data-deal-stage="new">
+                        + Добавить
+                    </button>
+                </article>
+
+                <article class="deal-column" data-deal-stage="negotiation">
+                    <div class="deal-column-header">
+                        <div>
+                            <span class="deal-stage-dot deal-stage-dot--negotiation"></span>
+                            <h3>Переговоры</h3>
+                        </div>
+                        <strong data-deal-counter="negotiation">0</strong>
+                    </div>
+                    <div class="deal-column-list" data-deal-list="negotiation"></div>
+                    <button class="deal-add-button" type="button" data-deal-stage="negotiation">
+                        + Добавить
+                    </button>
+                </article>
+
+                <article class="deal-column" data-deal-stage="proposal">
+                    <div class="deal-column-header">
+                        <div>
+                            <span class="deal-stage-dot deal-stage-dot--proposal"></span>
+                            <h3>Предложение</h3>
+                        </div>
+                        <strong data-deal-counter="proposal">0</strong>
+                    </div>
+                    <div class="deal-column-list" data-deal-list="proposal"></div>
+                    <button class="deal-add-button" type="button" data-deal-stage="proposal">
+                        + Добавить
+                    </button>
+                </article>
+
+                <article class="deal-column" data-deal-stage="payment">
+                    <div class="deal-column-header">
+                        <div>
+                            <span class="deal-stage-dot deal-stage-dot--payment"></span>
+                            <h3>Оплата</h3>
+                        </div>
+                        <strong data-deal-counter="payment">0</strong>
+                    </div>
+                    <div class="deal-column-list" data-deal-list="payment"></div>
+                    <button class="deal-add-button" type="button" data-deal-stage="payment">
+                        + Добавить
+                    </button>
+                </article>
+
+                <article class="deal-column" data-deal-stage="won">
+                    <div class="deal-column-header">
+                        <div>
+                            <span class="deal-stage-dot deal-stage-dot--won"></span>
+                            <h3>Успешно</h3>
+                        </div>
+                        <strong data-deal-counter="won">0</strong>
+                    </div>
+                    <div class="deal-column-list" data-deal-list="won"></div>
+                    <button class="deal-add-button" type="button" data-deal-stage="won">
+                        + Добавить
+                    </button>
+                </article>
+
+                <article class="deal-column" data-deal-stage="lost">
+                    <div class="deal-column-header">
+                        <div>
+                            <span class="deal-stage-dot deal-stage-dot--lost"></span>
+                            <h3>Проиграно</h3>
+                        </div>
+                        <strong data-deal-counter="lost">0</strong>
+                    </div>
+                    <div class="deal-column-list" data-deal-list="lost"></div>
+                    <button class="deal-add-button" type="button" data-deal-stage="lost">
+                        + Добавить
+                    </button>
+                </article>
+            </section>
         </section>
 
         <section class="crm-section" data-section-page="projects">
@@ -651,6 +763,96 @@
         </form>
     </div>
 </div>
+
+<div id="deal-modal" class="modal-overlay hidden">
+    <div class="modal">
+        <div class="modal-header">
+            <div>
+                <h2 id="deal-modal-title">Добавить сделку</h2>
+                <p id="deal-modal-subtitle">Заполните данные сделки и выберите этап воронки</p>
+            </div>
+
+            <button
+                    id="close-deal-modal-button"
+                    class="modal-close"
+                    type="button"
+                    aria-label="Закрыть"
+            >
+                ×
+            </button>
+        </div>
+
+        <form id="deal-form" class="task-form">
+            <label>
+                Название сделки
+                <input
+                        id="deal-title"
+                        type="text"
+                        placeholder="Например: Ремонт квартиры под ключ"
+                        required
+                >
+            </label>
+
+            <label>
+                Клиент
+                <select id="deal-client">
+                    <option value="">Без клиента</option>
+                </select>
+            </label>
+
+            <label>
+                Сумма, ₽
+                <input
+                        id="deal-amount"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value="0"
+                        placeholder="250000"
+                        required
+                >
+            </label>
+
+            <label>
+                Этап
+                <select id="deal-stage">
+                    <option value="new">Новая заявка</option>
+                    <option value="negotiation">Переговоры</option>
+                    <option value="proposal">Предложение</option>
+                    <option value="payment">Оплата</option>
+                    <option value="won">Успешно</option>
+                    <option value="lost">Проиграно</option>
+                </select>
+            </label>
+
+            <label>
+                Ответственный
+                <select id="deal-responsible">
+                    <option value="">Не назначен</option>
+                </select>
+            </label>
+
+            <label>
+                Заметка
+                <textarea
+                        id="deal-note"
+                        placeholder="Следующий шаг, договорённости или важные детали"
+                ></textarea>
+            </label>
+
+            <div class="modal-actions">
+                <button id="cancel-deal-button" class="ghost-button" type="button">
+                    Отмена
+                </button>
+
+                <button id="deal-submit-button" class="primary-button" type="submit">
+                    Сохранить сделку
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script src="app.js"></script>
 
 
