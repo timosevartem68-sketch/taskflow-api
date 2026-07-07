@@ -2267,3 +2267,168 @@ body.light-theme .deal-column {
         min-height: 470px;
     }
 }
+
+/* =========================================================
+   MARSDESK SPEED V3
+   Оптимизация отрисовки без изменения структуры интерфейса.
+   ========================================================= */
+
+/*
+   Фиксированный фон заставляет браузер пересчитывать большой слой
+   при прокрутке. Обычный фон визуально почти не отличается,
+   но прокрутка становится легче.
+*/
+body.marsdesk-theme {
+    background-attachment: scroll;
+}
+
+/*
+   Размытие оставляем только на крупных постоянных элементах.
+   На повторяющихся карточках backdrop-filter особенно дорогой.
+*/
+.auth-card,
+.sidebar,
+.header {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.stat-card,
+.client-stat-card,
+.placeholder-card,
+.create-card,
+.section-placeholder,
+.crm-page-head,
+.toolbar,
+.clients-toolbar,
+.column,
+.client-card,
+.empty-state,
+.deal-stat-card {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+
+.modal-overlay {
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+
+/*
+   Уменьшаем стоимость теней на больших списках.
+   Карточки сохраняют объём, но браузеру проще их перерисовывать.
+*/
+.stat-card,
+.client-stat-card,
+.placeholder-card,
+.create-card,
+.section-placeholder,
+.crm-page-head,
+.toolbar,
+.clients-toolbar,
+.column,
+.client-card,
+.empty-state,
+.deal-stat-card,
+.deals-toolbar,
+.deal-column,
+.team-stat-card,
+.team-member-card {
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.16);
+}
+
+.task-card,
+.deal-card {
+    box-shadow: 0 5px 14px rgba(0, 0, 0, 0.13);
+}
+
+/*
+   Не анимируем тяжёлую тень.
+   Оставляем только лёгкие свойства, которые не вызывают
+   дорогую перерисовку всей карточки.
+*/
+.stat-card,
+.client-stat-card,
+.placeholder-card,
+.create-card,
+.task-card,
+.client-card,
+.deal-card,
+.team-member-card {
+    transition:
+        transform 140ms cubic-bezier(.2, .8, .2, 1),
+        border-color 140ms cubic-bezier(.2, .8, .2, 1),
+        background-color 140ms cubic-bezier(.2, .8, .2, 1);
+}
+
+.stat-card:hover,
+.client-stat-card:hover,
+.placeholder-card:hover,
+.create-card:hover,
+.task-card:hover,
+.client-card:hover,
+.deal-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.18);
+}
+
+/*
+   После каждого поиска и изменения CRM раньше анимировала
+   появление всех карточек заново. На больших списках это создаёт лаг.
+*/
+.client-card.md-animate-in,
+.team-member-card.md-animate-in,
+.deal-card.md-animate-in {
+    animation: none;
+}
+
+/*
+   Карточки за пределами видимой области браузер сможет
+   не отрисовывать до момента прокрутки к ним.
+   Блок включается только в браузерах с поддержкой свойства.
+*/
+@supports (content-visibility: auto) {
+    .client-card {
+        content-visibility: auto;
+        contain-intrinsic-size: 250px;
+    }
+
+    .team-member-card {
+        content-visibility: auto;
+        contain-intrinsic-size: 130px;
+    }
+
+    .task-card {
+        content-visibility: auto;
+        contain-intrinsic-size: 210px;
+    }
+
+    .deal-card {
+        content-visibility: auto;
+        contain-intrinsic-size: 340px;
+    }
+}
+
+/*
+   Ограничиваем влияние горизонтальных досок на остальную страницу.
+*/
+.board,
+.deals-board {
+    overscroll-behavior-inline: contain;
+}
+
+/*
+   На мобильных устройствах полностью отключаем размытие постоянных
+   панелей. На небольших экранах разница во внешнем виде минимальна,
+   а нагрузка заметно ниже.
+*/
+@media (max-width: 900px) {
+    .auth-card,
+    .sidebar,
+    .header,
+    .modal-overlay {
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+    }
+}
+
