@@ -1359,77 +1359,7 @@ function renderClients() {
     }
 
     updateClientStats();
-    bindClientActionButtons();
 }
-
-function bindClientActionButtons() {
-    const editButtons = document.querySelectorAll(".client-edit-button");
-    const statusSelects = document.querySelectorAll(".client-status-select");
-    const responsibleSelects = document.querySelectorAll(".client-responsible-select");
-    const deleteButtons = document.querySelectorAll(".client-delete-button");
-
-    editButtons.forEach(function (button) {
-        button.addEventListener("click", function () {
-            const clientId = Number(button.dataset.clientId);
-
-            const client = clients.find(function (item) {
-                return item.id === clientId;
-            });
-
-            if (!client) {
-                alert("Клиент не найден");
-                return;
-            }
-
-            openClientModal(client);
-        });
-    });
-
-    statusSelects.forEach(function (select) {
-        select.addEventListener("change", async function () {
-            const clientId = Number(select.dataset.clientId);
-            const newStatus = select.value;
-
-            select.disabled = true;
-
-            try {
-                await updateClientStatus(clientId, newStatus);
-            } catch (error) {
-                alert(error.message);
-                await loadClientsFromApi();
-            }
-        });
-    });
-
-    responsibleSelects.forEach(function (select) {
-        select.addEventListener("change", async function () {
-            const clientId = Number(select.dataset.clientId);
-            const responsibleId = parseResponsibleId(select.value);
-
-            select.disabled = true;
-
-            try {
-                await updateClientResponsible(clientId, responsibleId);
-            } catch (error) {
-                alert(error.message);
-                await loadClientsFromApi();
-            }
-        });
-    });
-
-    deleteButtons.forEach(function (button) {
-        button.addEventListener("click", async function () {
-            const clientId = Number(button.dataset.clientId);
-
-            try {
-                await deleteClient(clientId);
-            } catch (error) {
-                alert(error.message);
-            }
-        });
-    });
-}
-
 
 // -------------------- DEALS --------------------
 
@@ -1941,77 +1871,7 @@ function renderDeals() {
             .join("");
     });
 
-    bindDealActionButtons();
 }
-
-function bindDealActionButtons() {
-    const editButtons = document.querySelectorAll(".deal-edit-button");
-    const deleteButtons = document.querySelectorAll(".deal-delete-button");
-    const stageSelects = document.querySelectorAll(".deal-stage-select");
-    const responsibleSelects = document.querySelectorAll(".deal-responsible-select");
-
-    editButtons.forEach(function (button) {
-        button.addEventListener("click", function () {
-            const dealId = Number(button.dataset.dealId);
-
-            const deal = deals.find(function (item) {
-                return item.id === dealId;
-            });
-
-            if (!deal) {
-                alert("Сделка не найдена");
-                return;
-            }
-
-            openDealModal(deal);
-        });
-    });
-
-    deleteButtons.forEach(function (button) {
-        button.addEventListener("click", async function () {
-            const dealId = Number(button.dataset.dealId);
-
-            try {
-                await deleteDeal(dealId);
-            } catch (error) {
-                alert(error.message);
-            }
-        });
-    });
-
-    stageSelects.forEach(function (select) {
-        select.addEventListener("change", async function () {
-            const dealId = Number(select.dataset.dealId);
-            const stage = select.value;
-
-            select.disabled = true;
-
-            try {
-                await updateDealStage(dealId, stage);
-            } catch (error) {
-                alert(error.message);
-                await loadDealsFromApi();
-            }
-        });
-    });
-
-    responsibleSelects.forEach(function (select) {
-        select.addEventListener("change", async function () {
-            const dealId = Number(select.dataset.dealId);
-            const responsibleId = parseResponsibleId(select.value);
-
-            select.disabled = true;
-
-            try {
-                await updateDealResponsible(dealId, responsibleId);
-            } catch (error) {
-                alert(error.message);
-                await loadDealsFromApi();
-            }
-        });
-    });
-}
-
 
 // -------------------- TEAM --------------------
 
@@ -2201,6 +2061,147 @@ const debouncedClientSearch = debounce(renderClients);
 const debouncedTeamSearch = debounce(renderTeam);
 const debouncedDealSearch = debounce(renderDeals);
 
+
+async function handleClientsListClick(event) {
+    const editButton = event.target.closest(".client-edit-button");
+
+    if (editButton && clientsList.contains(editButton)) {
+        const clientId = Number(editButton.dataset.clientId);
+
+        const client = clients.find(function (item) {
+            return item.id === clientId;
+        });
+
+        if (!client) {
+            alert("Клиент не найден");
+            return;
+        }
+
+        openClientModal(client);
+        return;
+    }
+
+    const deleteButton = event.target.closest(".client-delete-button");
+
+    if (deleteButton && clientsList.contains(deleteButton)) {
+        const clientId = Number(deleteButton.dataset.clientId);
+
+        try {
+            await deleteClient(clientId);
+        } catch (error) {
+            alert(error.message);
+        }
+    }
+}
+
+async function handleClientsListChange(event) {
+    const select = event.target;
+
+    if (!(select instanceof HTMLSelectElement)) {
+        return;
+    }
+
+    if (select.classList.contains("client-status-select")) {
+        const clientId = Number(select.dataset.clientId);
+        const newStatus = select.value;
+
+        select.disabled = true;
+
+        try {
+            await updateClientStatus(clientId, newStatus);
+        } catch (error) {
+            alert(error.message);
+            await loadClientsFromApi();
+        }
+
+        return;
+    }
+
+    if (select.classList.contains("client-responsible-select")) {
+        const clientId = Number(select.dataset.clientId);
+        const responsibleId = parseResponsibleId(select.value);
+
+        select.disabled = true;
+
+        try {
+            await updateClientResponsible(clientId, responsibleId);
+        } catch (error) {
+            alert(error.message);
+            await loadClientsFromApi();
+        }
+    }
+}
+
+async function handleDealsBoardClick(event) {
+    const editButton = event.target.closest(".deal-edit-button");
+
+    if (editButton && dealsBoard.contains(editButton)) {
+        const dealId = Number(editButton.dataset.dealId);
+
+        const deal = deals.find(function (item) {
+            return item.id === dealId;
+        });
+
+        if (!deal) {
+            alert("Сделка не найдена");
+            return;
+        }
+
+        openDealModal(deal);
+        return;
+    }
+
+    const deleteButton = event.target.closest(".deal-delete-button");
+
+    if (deleteButton && dealsBoard.contains(deleteButton)) {
+        const dealId = Number(deleteButton.dataset.dealId);
+
+        try {
+            await deleteDeal(dealId);
+        } catch (error) {
+            alert(error.message);
+        }
+    }
+}
+
+async function handleDealsBoardChange(event) {
+    const select = event.target;
+
+    if (!(select instanceof HTMLSelectElement)) {
+        return;
+    }
+
+    if (select.classList.contains("deal-stage-select")) {
+        const dealId = Number(select.dataset.dealId);
+        const stage = select.value;
+
+        select.disabled = true;
+
+        try {
+            await updateDealStage(dealId, stage);
+        } catch (error) {
+            alert(error.message);
+            await loadDealsFromApi();
+        }
+
+        return;
+    }
+
+    if (select.classList.contains("deal-responsible-select")) {
+        const dealId = Number(select.dataset.dealId);
+        const responsibleId = parseResponsibleId(select.value);
+
+        select.disabled = true;
+
+        try {
+            await updateDealResponsible(dealId, responsibleId);
+        } catch (error) {
+            alert(error.message);
+            await loadDealsFromApi();
+        }
+    }
+}
+
 // -------------------- EVENTS --------------------
 
 loginTab.addEventListener("click", function () {
@@ -2376,6 +2377,15 @@ if (clientForm) {
     clientForm.addEventListener("submit", async function (event) {
         event.preventDefault();
 
+        if (clientSubmitButton.disabled) {
+            return;
+        }
+
+        const originalButtonText = clientSubmitButton.innerText;
+
+        clientSubmitButton.disabled = true;
+        clientSubmitButton.innerText = "Сохраняем...";
+
         try {
             if (editingClientId === null) {
                 await createClientFromForm();
@@ -2386,8 +2396,16 @@ if (clientForm) {
             closeClientModal();
         } catch (error) {
             alert(error.message);
+        } finally {
+            clientSubmitButton.disabled = false;
+            clientSubmitButton.innerText = originalButtonText;
         }
     });
+}
+
+if (clientsList) {
+    clientsList.addEventListener("click", handleClientsListClick);
+    clientsList.addEventListener("change", handleClientsListChange);
 }
 
 if (clientSearchInput) {
@@ -2456,6 +2474,15 @@ if (dealForm) {
     dealForm.addEventListener("submit", async function (event) {
         event.preventDefault();
 
+        if (dealSubmitButton.disabled) {
+            return;
+        }
+
+        const originalButtonText = dealSubmitButton.innerText;
+
+        dealSubmitButton.disabled = true;
+        dealSubmitButton.innerText = "Сохраняем...";
+
         try {
             if (editingDealId === null) {
                 await createDealFromForm();
@@ -2466,8 +2493,16 @@ if (dealForm) {
             closeDealModal();
         } catch (error) {
             alert(error.message);
+        } finally {
+            dealSubmitButton.disabled = false;
+            dealSubmitButton.innerText = originalButtonText;
         }
     });
+}
+
+if (dealsBoard) {
+    dealsBoard.addEventListener("click", handleDealsBoardClick);
+    dealsBoard.addEventListener("change", handleDealsBoardChange);
 }
 
 if (dealSearchInput) {
