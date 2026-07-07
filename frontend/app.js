@@ -76,6 +76,16 @@ const clientActiveCount = document.querySelector("#client-active-count");
 const clientNewCount = document.querySelector("#client-new-count");
 const clientLostCount = document.querySelector("#client-lost-count");
 
+// Карточка клиента
+const clientProfileModal = document.querySelector("#client-profile-modal");
+const closeClientProfileButton = document.querySelector("#close-client-profile-button");
+const clientProfileTitle = document.querySelector("#client-profile-title");
+const clientProfileSubtitle = document.querySelector("#client-profile-subtitle");
+const clientProfileContent = document.querySelector("#client-profile-content");
+const clientProfileEditButton = document.querySelector("#client-profile-edit-button");
+const clientProfileCreateDealButton = document.querySelector("#client-profile-create-deal-button");
+
+
 // Раздел команды
 const teamSearchInput = document.querySelector("#team-search-input");
 const teamRoleFilter = document.querySelector("#team-role-filter");
@@ -122,6 +132,9 @@ let deals = [];
 let editingClientId = null;
 let editingDealId = null;
 let dashboardLoadPromise = null;
+let activeClientProfileId = null;
+let clientProfileDeals = [];
+let clientProfileRequestVersion = 0;
 let draggedDealId = null;
 let draggedDealSourceStage = null;
 let activeDealDropColumn = null;
@@ -1341,6 +1354,14 @@ function renderClients() {
 
                         <div class="client-actions">
                             <button
+                                class="primary-button client-profile-button"
+                                type="button"
+                                data-client-id="${client.id}"
+                            >
+                                Открыть карточку
+                            </button>
+
+                            <button
                                 class="ghost-button client-edit-button"
                                 type="button"
                                 data-client-id="${client.id}"
@@ -1363,6 +1384,311 @@ function renderClients() {
     }
 
     updateClientStats();
+}
+
+
+// -------------------- CLIENT PROFILE --------------------
+
+function getActiveClientProfile() {
+    return getClientById(activeClientProfileId);
+}
+
+function getClientProfileStatusClass(status) {
+    const allowedStatuses = ["new", "in_progress", "active", "lost"];
+
+    return allowedStatuses.includes(status)
+        ? status
+        : "new";
+}
+
+function renderClientProfileLoading(client) {
+    if (!clientProfileContent) {
+        return;
+    }
+
+    if (clientProfileTitle) {
+        clientProfileTitle.innerText = client.fullName || "Клиент";
+    }
+
+    if (clientProfileSubtitle) {
+        clientProfileSubtitle.innerText = client.company || "Контакты и связанные сделки";
+    }
+
+    clientProfileContent.innerHTML = `
+        <div class="client-profile-loading">
+            Загружаем сделки клиента...
+        </div>
+    `;
+}
+
+function renderClientProfileError(message) {
+    if (!clientProfileContent) {
+        return;
+    }
+
+    clientProfileContent.innerHTML = `
+        <div class="empty-state client-profile-error">
+            <h3>Не удалось загрузить карточку</h3>
+            <p>${escapeHtml(message || "Повторите попытку позже")}</p>
+        </div>
+    `;
+}
+
+function renderClientProfile(client, relatedDeals) {
+    if (!clientProfileContent) {
+        return;
+    }
+
+    const totalDeals = relatedDeals.length;
+
+    const activeAmount = relatedDeals
+        .filter(function (deal) {
+            return !["won", "lost"].includes(deal.stage);
+        })
+        .reduce(function (sum, deal) {
+            return sum + Number(deal.amount || 0);
+        }, 0);
+
+    const wonAmount = relatedDeals
+        .filter(function (deal) {
+            return deal.stage === "won";
+        })
+        .reduce(function (sum, deal) {
+            return sum + Number(deal.amount || 0);
+        }, 0);
+
+    const responsibleLabel = getResponsibleLabel(client.responsibleId);
+    const statusClass = getClientProfileStatusClass(client.status);
+
+    const dealsHtml = relatedDeals.length === 0
+        ? `
+            <div class="empty-state client-profile-deals-empty">
+                <h3>У клиента пока нет сделок</h3>
+                <p>Создайте первую сделку прямо из карточки клиента.</p>
+            </div>
+        `
+        : relatedDeals
+            .map(function (deal) {
+                return `
+                    <article class="client-profile-deal">
+                        <div class="client-profile-deal-main">
+                            <div>
+                                <span class="client-profile-deal-stage client-profile-deal-stage--${deal.stage}">
+                                    ${escapeHtml(getDealStageLabel(deal.stage))}
+                                </span>
+                                <h4>${escapeHtml(deal.title)}</h4>
+                            </div>
+
+                            <strong>${escapeHtml(formatMoney(deal.amount))}</strong>
+                        </div>
+
+                        <div class="client-profile-deal-meta">
+                            <span>Ответственный: ${escapeHtml(getResponsibleLabel(deal.responsibleId))}</span>
+                            <span>Создана: ${escapeHtml(formatDate(deal.createdAt))}</span>
+                        </div>
+
+                        <button
+                            class="ghost-button client-profile-deal-edit"
+                            type="button"
+                            data-deal-id="${deal.id}"
+                        >
+                            Изменить сделку
+                        </button>
+                    </article>
+                `;
+            })
+            .join("");
+
+    if (clientProfileTitle) {
+        clientProfileTitle.innerText = client.fullName || "Клиент";
+    }
+
+    if (clientProfileSubtitle) {
+        clientProfileSubtitle.innerText = client.company
+            ? `${client.company} · ${getClientStatusLabel(client.status)}`
+            : getClientStatusLabel(client.status);
+    }
+
+    clientProfileContent.innerHTML = `
+        <section class="client-profile-hero">
+            <div class="client-profile-person">
+                <div class="client-profile-avatar">
+                    ${escapeHtml(getClientAvatarLetter(client.fullName))}
+                </div>
+
+                <div>
+                    <h3>${escapeHtml(client.fullName)}</h3>
+                    <p>${escapeHtml(client.company || "Компания не указана")}</p>
+                </div>
+            </div>
+
+            <div class="client-profile-badges">
+                <span class="client-profile-status client-profile-status--${statusClass}">
+                    ${escapeHtml(getClientStatusLabel(client.status))}
+                </span>
+
+                <span class="client-profile-responsible">
+                    ${escapeHtml(responsibleLabel)}
+                </span>
+            </div>
+        </section>
+
+        <section class="client-profile-contact-grid">
+            <article>
+                <span>Телефон</span>
+                <strong>${escapeHtml(client.phone || "Не указан")}</strong>
+            </article>
+
+            <article>
+                <span>Email</span>
+                <strong>${escapeHtml(client.email || "Не указан")}</strong>
+            </article>
+
+            <article>
+                <span>Источник</span>
+                <strong>${escapeHtml(client.source || "Не указан")}</strong>
+            </article>
+
+            <article>
+                <span>Добавлен</span>
+                <strong>${escapeHtml(formatDate(client.createdAt))}</strong>
+            </article>
+        </section>
+
+        <section class="client-profile-note">
+            <span>Заметка</span>
+            <p>${escapeHtml(client.note || "Заметка пока не добавлена")}</p>
+        </section>
+
+        <section class="client-profile-stats">
+            <article>
+                <span>Всего сделок</span>
+                <strong>${totalDeals}</strong>
+            </article>
+
+            <article>
+                <span>В активной воронке</span>
+                <strong>${escapeHtml(formatMoney(activeAmount))}</strong>
+            </article>
+
+            <article>
+                <span>Успешно закрыто</span>
+                <strong>${escapeHtml(formatMoney(wonAmount))}</strong>
+            </article>
+        </section>
+
+        <section class="client-profile-deals-section">
+            <div class="client-profile-section-head">
+                <div>
+                    <span>История продаж</span>
+                    <h3>Сделки клиента</h3>
+                </div>
+
+                <strong>${totalDeals}</strong>
+            </div>
+
+            <div class="client-profile-deals-list">
+                ${dealsHtml}
+            </div>
+        </section>
+    `;
+}
+
+async function loadClientProfileDeals(clientId, requestVersion) {
+    if (!currentWorkspace) {
+        throw new Error("Рабочее пространство ещё не загружено");
+    }
+
+    const data = await requestJson(
+        `${API_URL}/deals?workspace_id=${currentWorkspace.id}&client_id=${clientId}&limit=100&sort_by=created_at&sort_order=desc`,
+        {
+            method: "GET",
+            headers: getAuthHeaders(),
+        }
+    );
+
+    if (
+        requestVersion !== clientProfileRequestVersion
+        || Number(clientId) !== Number(activeClientProfileId)
+    ) {
+        return null;
+    }
+
+    return normalizeList(data).map(function (deal) {
+        return normalizeDealFromApi(deal);
+    });
+}
+
+async function openClientProfile(clientId) {
+    const client = getClientById(clientId);
+
+    if (!client) {
+        alert("Клиент не найден");
+        return;
+    }
+
+    activeClientProfileId = Number(clientId);
+    clientProfileDeals = [];
+    clientProfileRequestVersion += 1;
+
+    const requestVersion = clientProfileRequestVersion;
+
+    renderClientProfileLoading(client);
+    clientProfileModal.classList.remove("hidden");
+
+    try {
+        const loadedDeals = await loadClientProfileDeals(
+            activeClientProfileId,
+            requestVersion
+        );
+
+        if (loadedDeals === null) {
+            return;
+        }
+
+        clientProfileDeals = loadedDeals;
+        renderClientProfile(client, clientProfileDeals);
+    } catch (error) {
+        if (requestVersion !== clientProfileRequestVersion) {
+            return;
+        }
+
+        renderClientProfileError(error.message);
+    }
+}
+
+function closeClientProfile() {
+    if (!clientProfileModal) {
+        return;
+    }
+
+    clientProfileRequestVersion += 1;
+    activeClientProfileId = null;
+    clientProfileDeals = [];
+
+    clientProfileModal.classList.add("hidden");
+
+    if (clientProfileContent) {
+        clientProfileContent.innerHTML = `
+            <div class="client-profile-loading">
+                Загружаем карточку клиента...
+            </div>
+        `;
+    }
+}
+
+function openDealFromClientProfile(dealId) {
+    const deal = clientProfileDeals.find(function (item) {
+        return item.id === Number(dealId);
+    });
+
+    if (!deal) {
+        alert("Сделка не найдена");
+        return;
+    }
+
+    closeClientProfile();
+    openDealModal(deal);
 }
 
 // -------------------- DEALS --------------------
@@ -1522,15 +1848,17 @@ async function loadDealsFromApi(shouldRender = true) {
     }
 }
 
-function openDealModal(deal = null, initialStage = "new") {
+function openDealModal(deal = null, initialStage = "new", initialClientId = null) {
     if (!dealModal || !dealForm) {
         return;
     }
 
     dealForm.reset();
-    dealClientInput.innerHTML = buildDealClientOptions(
-        deal ? deal.clientId : null
-    );
+    const selectedClientId = deal
+        ? deal.clientId
+        : initialClientId;
+
+    dealClientInput.innerHTML = buildDealClientOptions(selectedClientId);
     dealResponsibleInput.innerHTML = buildResponsibleOptions(
         deal ? deal.responsibleId : null,
         "form"
@@ -1560,7 +1888,9 @@ function openDealModal(deal = null, initialStage = "new") {
         dealModalSubtitle.innerText = "Заполните данные сделки и выберите этап воронки";
         dealSubmitButton.innerText = "Сохранить сделку";
 
-        dealClientInput.value = "";
+        dealClientInput.value = selectedClientId === null || selectedClientId === undefined
+            ? ""
+            : String(selectedClientId);
         dealAmountInput.value = "0";
         dealStageInput.value = DEAL_STAGES.includes(initialStage)
             ? initialStage
@@ -2163,6 +2493,15 @@ const debouncedDealSearch = debounce(renderDeals);
 
 
 async function handleClientsListClick(event) {
+    const profileButton = event.target.closest(".client-profile-button");
+
+    if (profileButton && clientsList.contains(profileButton)) {
+        const clientId = Number(profileButton.dataset.clientId);
+
+        await openClientProfile(clientId);
+        return;
+    }
+
     const editButton = event.target.closest(".client-edit-button");
 
     if (editButton && clientsList.contains(editButton)) {
@@ -2500,6 +2839,7 @@ logoutButton.addEventListener("click", function () {
     clients = [];
     workspaceMembers = [];
     deals = [];
+    closeClientProfile();
     clearTaskCards();
     showAuthScreen();
 });
@@ -2700,6 +3040,56 @@ if (teamSearchInput) {
 if (teamRoleFilter) {
     teamRoleFilter.addEventListener("change", function () {
         renderTeam();
+    });
+}
+
+
+if (closeClientProfileButton) {
+    closeClientProfileButton.addEventListener("click", function () {
+        closeClientProfile();
+    });
+}
+
+if (clientProfileModal) {
+    clientProfileModal.addEventListener("click", function (event) {
+        if (event.target === clientProfileModal) {
+            closeClientProfile();
+            return;
+        }
+
+        const dealEditButton = event.target.closest(".client-profile-deal-edit");
+
+        if (dealEditButton && clientProfileModal.contains(dealEditButton)) {
+            openDealFromClientProfile(Number(dealEditButton.dataset.dealId));
+        }
+    });
+}
+
+if (clientProfileEditButton) {
+    clientProfileEditButton.addEventListener("click", function () {
+        const client = getActiveClientProfile();
+
+        if (!client) {
+            alert("Клиент не найден");
+            return;
+        }
+
+        closeClientProfile();
+        openClientModal(client);
+    });
+}
+
+if (clientProfileCreateDealButton) {
+    clientProfileCreateDealButton.addEventListener("click", function () {
+        const clientId = activeClientProfileId;
+
+        if (!clientId) {
+            alert("Клиент не найден");
+            return;
+        }
+
+        closeClientProfile();
+        openDealModal(null, "new", clientId);
     });
 }
 

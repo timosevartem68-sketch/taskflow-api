@@ -764,6 +764,44 @@
     </div>
 </div>
 
+
+<div id="client-profile-modal" class="modal-overlay hidden">
+    <div class="modal client-profile-modal">
+        <div class="modal-header">
+            <div>
+                <div class="section-placeholder-badge">Карточка клиента</div>
+                <h2 id="client-profile-title">Клиент</h2>
+                <p id="client-profile-subtitle">Контакты, ответственный и связанные сделки</p>
+            </div>
+
+            <button
+                    id="close-client-profile-button"
+                    class="modal-close"
+                    type="button"
+                    aria-label="Закрыть"
+            >
+                ×
+            </button>
+        </div>
+
+        <div id="client-profile-content" class="client-profile-content" aria-live="polite">
+            <div class="client-profile-loading">
+                Загружаем карточку клиента...
+            </div>
+        </div>
+
+        <div class="modal-actions client-profile-actions">
+            <button id="client-profile-edit-button" class="ghost-button" type="button">
+                Изменить клиента
+            </button>
+
+            <button id="client-profile-create-deal-button" class="primary-button" type="button">
+                + Создать сделку
+            </button>
+        </div>
+    </div>
+</div>
+
 <div id="deal-modal" class="modal-overlay hidden">
     <div class="modal">
         <div class="modal-header">
