@@ -122,6 +122,10 @@ let deals = [];
 let editingClientId = null;
 let editingDealId = null;
 let dashboardLoadPromise = null;
+let draggedDealId = null;
+let draggedDealSourceStage = null;
+let activeDealDropColumn = null;
+const syncingDealStageIds = new Set();
 
 /*
     localStorage - это маленькое хранилище в браузере.
@@ -1372,6 +1376,14 @@ const DEAL_STAGES = [
     "lost",
 ];
 
+function isValidDealStage(stage) {
+    return DEAL_STAGES.includes(stage);
+}
+
+function isDealStageSyncing(dealId) {
+    return syncingDealStageIds.has(Number(dealId));
+}
+
 function normalizeDealFromApi(deal) {
     return {
         id: deal.id,
@@ -1647,6 +1659,75 @@ async function updateDealStage(dealId, stage) {
     renderDeals();
 }
 
+async function moveDealToStageByDrag(dealId, targetStage) {
+    const normalizedDealId = Number(dealId);
+
+    if (!Number.isInteger(normalizedDealId) || !isValidDealStage(targetStage)) {
+        return;
+    }
+
+    if (isDealStageSyncing(normalizedDealId)) {
+        return;
+    }
+
+    const currentDeal = deals.find(function (deal) {
+        return deal.id === normalizedDealId;
+    });
+
+    if (!currentDeal || currentDeal.stage === targetStage) {
+        return;
+    }
+
+    const previousDeal = { ...currentDeal };
+
+    syncingDealStageIds.add(normalizedDealId);
+
+    deals = deals.map(function (deal) {
+        if (deal.id !== normalizedDealId) {
+            return deal;
+        }
+
+        return {
+            ...deal,
+            stage: targetStage,
+        };
+    });
+
+    renderDeals();
+
+    try {
+        const updatedDeal = await requestJson(
+            `${API_URL}/deals/${normalizedDealId}/stage`,
+            {
+                method: "PATCH",
+                headers: getJsonAuthHeaders(),
+                body: JSON.stringify({
+                    stage: targetStage,
+                }),
+            }
+        );
+
+        const normalizedDeal = normalizeDealFromApi(updatedDeal);
+
+        deals = deals.map(function (deal) {
+            return deal.id === normalizedDealId
+                ? normalizedDeal
+                : deal;
+        });
+    } catch (error) {
+        deals = deals.map(function (deal) {
+            return deal.id === normalizedDealId
+                ? previousDeal
+                : deal;
+        });
+
+        throw error;
+    } finally {
+        syncingDealStageIds.delete(normalizedDealId);
+        renderDeals();
+    }
+}
+
 async function updateDealResponsible(dealId, responsibleId) {
     const updatedDeal = await requestJson(
         `${API_URL}/deals/${dealId}/responsible`,
@@ -1807,9 +1888,26 @@ function renderDeals() {
                 const responsibleLabel = getResponsibleLabel(deal.responsibleId);
 
                 return `
-                    <article class="deal-card md-animate-in" data-deal-id="${deal.id}">
+                    <article
+                        class="deal-card md-animate-in ${isDealStageSyncing(deal.id) ? "deal-card--syncing" : ""}"
+                        data-deal-id="${deal.id}"
+                        data-deal-stage="${deal.stage}"
+                    >
                         <div class="deal-card-top">
-                            <span class="deal-card-id">#${deal.id}</span>
+                            <div class="deal-card-top-left">
+                                <button
+                                    class="deal-drag-handle"
+                                    type="button"
+                                    draggable="true"
+                                    data-deal-id="${deal.id}"
+                                    aria-label="Перетащить сделку в другой этап"
+                                    title="Перетащить сделку"
+                                    ${isDealStageSyncing(deal.id) ? "disabled" : ""}
+                                >
+                                    ⋮⋮
+                                </button>
+                                <span class="deal-card-id">#${deal.id}</span>
+                            </div>
                             <strong>${escapeHtml(formatMoney(deal.amount))}</strong>
                         </div>
 
@@ -1825,6 +1923,7 @@ function renderDeals() {
                             <select
                                 class="deal-stage-select deal-stage-select--${deal.stage}"
                                 data-deal-id="${deal.id}"
+                                ${isDealStageSyncing(deal.id) ? "disabled" : ""}
                             >
                                 <option value="new" ${deal.stage === "new" ? "selected" : ""}>Новая заявка</option>
                                 <option value="negotiation" ${deal.stage === "negotiation" ? "selected" : ""}>Переговоры</option>
@@ -1841,6 +1940,7 @@ function renderDeals() {
                                 class="deal-responsible-select"
                                 data-deal-id="${deal.id}"
                                 title="${escapeHtml(responsibleLabel)}"
+                                ${isDealStageSyncing(deal.id) ? "disabled" : ""}
                             >
                                 ${buildResponsibleOptions(deal.responsibleId, "form")}
                             </select>
@@ -2202,6 +2302,171 @@ async function handleDealsBoardChange(event) {
     }
 }
 
+function clearDealDragVisuals() {
+    if (!dealsBoard) {
+        return;
+    }
+
+    dealsBoard
+        .querySelectorAll(".deal-column.is-drag-over")
+        .forEach(function (column) {
+            column.classList.remove("is-drag-over");
+        });
+
+    dealsBoard
+        .querySelectorAll(".deal-card.is-dragging")
+        .forEach(function (card) {
+            card.classList.remove("is-dragging");
+        });
+
+    activeDealDropColumn = null;
+}
+
+function resetDealDragState() {
+    clearDealDragVisuals();
+    draggedDealId = null;
+    draggedDealSourceStage = null;
+}
+
+function setActiveDealDropColumn(column) {
+    if (activeDealDropColumn === column) {
+        return;
+    }
+
+    if (activeDealDropColumn) {
+        activeDealDropColumn.classList.remove("is-drag-over");
+    }
+
+    activeDealDropColumn = column;
+
+    if (activeDealDropColumn) {
+        activeDealDropColumn.classList.add("is-drag-over");
+    }
+}
+
+function autoScrollDealsBoard(clientX) {
+    if (!dealsBoard) {
+        return;
+    }
+
+    const boardRect = dealsBoard.getBoundingClientRect();
+    const edgeSize = 72;
+    const scrollStep = 24;
+
+    if (clientX < boardRect.left + edgeSize) {
+        dealsBoard.scrollLeft -= scrollStep;
+    } else if (clientX > boardRect.right - edgeSize) {
+        dealsBoard.scrollLeft += scrollStep;
+    }
+}
+
+function handleDealDragStart(event) {
+    const dragHandle = event.target.closest(".deal-drag-handle");
+
+    if (!dragHandle || !dealsBoard.contains(dragHandle)) {
+        return;
+    }
+
+    const dealId = Number(dragHandle.dataset.dealId);
+    const deal = deals.find(function (item) {
+        return item.id === dealId;
+    });
+
+    if (!deal || isDealStageSyncing(dealId)) {
+        event.preventDefault();
+        return;
+    }
+
+    const card = dragHandle.closest(".deal-card");
+
+    draggedDealId = dealId;
+    draggedDealSourceStage = deal.stage;
+
+    if (card) {
+        card.classList.add("is-dragging");
+    }
+
+    if (event.dataTransfer) {
+        event.dataTransfer.effectAllowed = "move";
+        event.dataTransfer.setData("text/plain", String(dealId));
+    }
+}
+
+function handleDealDragOver(event) {
+    if (draggedDealId === null) {
+        return;
+    }
+
+    const column = event.target.closest(".deal-column");
+
+    if (!column || !dealsBoard.contains(column)) {
+        return;
+    }
+
+    const targetStage = column.dataset.dealStage;
+
+    if (!isValidDealStage(targetStage)) {
+        return;
+    }
+
+    event.preventDefault();
+
+    if (event.dataTransfer) {
+        event.dataTransfer.dropEffect = "move";
+    }
+
+    setActiveDealDropColumn(column);
+    autoScrollDealsBoard(event.clientX);
+}
+
+function handleDealDragLeave(event) {
+    const column = event.target.closest(".deal-column");
+
+    if (!column || column !== activeDealDropColumn) {
+        return;
+    }
+
+    if (event.relatedTarget && column.contains(event.relatedTarget)) {
+        return;
+    }
+
+    setActiveDealDropColumn(null);
+}
+
+async function handleDealDrop(event) {
+    if (draggedDealId === null) {
+        return;
+    }
+
+    const column = event.target.closest(".deal-column");
+
+    if (!column || !dealsBoard.contains(column)) {
+        resetDealDragState();
+        return;
+    }
+
+    const targetStage = column.dataset.dealStage;
+    const dealId = draggedDealId;
+    const sourceStage = draggedDealSourceStage;
+
+    event.preventDefault();
+    resetDealDragState();
+
+    if (!isValidDealStage(targetStage) || targetStage === sourceStage) {
+        return;
+    }
+
+    try {
+        await moveDealToStageByDrag(dealId, targetStage);
+    } catch (error) {
+        alert(`Не удалось переместить сделку: ${error.message}`);
+    }
+}
+
+function handleDealDragEnd() {
+    resetDealDragState();
+}
+
 // -------------------- EVENTS --------------------
 
 loginTab.addEventListener("click", function () {
@@ -2503,6 +2768,11 @@ if (dealForm) {
 if (dealsBoard) {
     dealsBoard.addEventListener("click", handleDealsBoardClick);
     dealsBoard.addEventListener("change", handleDealsBoardChange);
+    dealsBoard.addEventListener("dragstart", handleDealDragStart);
+    dealsBoard.addEventListener("dragover", handleDealDragOver);
+    dealsBoard.addEventListener("dragleave", handleDealDragLeave);
+    dealsBoard.addEventListener("drop", handleDealDrop);
+    dealsBoard.addEventListener("dragend", handleDealDragEnd);
 }
 
 if (dealSearchInput) {

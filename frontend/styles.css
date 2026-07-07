@@ -2432,3 +2432,129 @@ body.marsdesk-theme {
     }
 }
 
+/* =========================================================
+   MARSDESK DRAG & DROP V4
+   Перетаскивание сделок между этапами воронки.
+   ========================================================= */
+
+.deal-card {
+    position: relative;
+}
+
+.deal-card-top-left {
+    min-width: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.deal-drag-handle {
+    appearance: none;
+    flex: 0 0 auto;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border: 1px solid var(--md-border);
+    border-radius: 10px;
+    display: inline-grid;
+    place-items: center;
+    color: var(--md-text-soft);
+    background: rgba(48, 56, 76, 0.42);
+    font-size: 16px;
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: -4px;
+    cursor: grab;
+    user-select: none;
+    transition:
+        border-color 140ms cubic-bezier(.2, .8, .2, 1),
+        color 140ms cubic-bezier(.2, .8, .2, 1),
+        background-color 140ms cubic-bezier(.2, .8, .2, 1);
+}
+
+.deal-drag-handle:hover {
+    border-color: rgba(241, 76, 45, 0.52);
+    color: var(--md-text);
+    background: var(--md-accent-soft);
+}
+
+.deal-drag-handle:active {
+    cursor: grabbing;
+}
+
+.deal-drag-handle:focus-visible {
+    outline: 3px solid rgba(241, 76, 45, 0.28);
+    outline-offset: 2px;
+}
+
+.deal-drag-handle:disabled {
+    cursor: wait;
+    opacity: 0.45;
+}
+
+body.light-theme .deal-drag-handle {
+    background: rgba(255, 255, 255, 0.72);
+}
+
+.deal-card.is-dragging {
+    opacity: 0.42;
+    border-color: rgba(241, 76, 45, 0.46);
+}
+
+.deal-column {
+    transition:
+        border-color 140ms cubic-bezier(.2, .8, .2, 1),
+        background-color 140ms cubic-bezier(.2, .8, .2, 1),
+        box-shadow 140ms cubic-bezier(.2, .8, .2, 1);
+}
+
+.deal-column.is-drag-over {
+    border-color: rgba(241, 76, 45, 0.78);
+    background: rgba(241, 76, 45, 0.10);
+    box-shadow:
+        inset 0 0 0 2px rgba(241, 76, 45, 0.18),
+        0 8px 24px rgba(0, 0, 0, 0.18);
+}
+
+body.light-theme .deal-column.is-drag-over {
+    background: rgba(241, 76, 45, 0.08);
+}
+
+.deal-column.is-drag-over .deal-column-list {
+    min-height: 96px;
+    border-radius: 15px;
+    outline: 1px dashed rgba(241, 76, 45, 0.52);
+    outline-offset: 5px;
+}
+
+.deal-card--syncing {
+    pointer-events: none;
+    opacity: 0.68;
+}
+
+.deal-card--syncing::after {
+    content: "Сохраняем...";
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    border-radius: inherit;
+    display: grid;
+    place-items: center;
+    color: var(--md-text);
+    background: rgba(8, 10, 19, 0.74);
+    font-size: 12px;
+    font-weight: 850;
+    letter-spacing: 0.02em;
+}
+
+body.light-theme .deal-card--syncing::after {
+    background: rgba(255, 255, 255, 0.82);
+}
+
+@media (max-width: 900px) {
+    .deal-drag-handle {
+        width: 34px;
+        height: 34px;
+    }
+}
+
