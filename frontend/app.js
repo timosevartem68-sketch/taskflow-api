@@ -2,6 +2,12 @@ console.log("MarsDesk JS loaded");
 
 const API_URL = "http://127.0.0.1:8000/api/v1";
 
+const RUB_FORMATTER = new Intl.NumberFormat("ru-RU", {
+    style: "currency",
+    currency: "RUB",
+    maximumFractionDigits: 0,
+});
+
 // Экран авторизации
 const authScreen = document.querySelector("#auth-screen");
 const appPage = document.querySelector("#app-page");
@@ -79,6 +85,32 @@ const teamManagerCount = document.querySelector("#team-manager-count");
 const teamMemberCount = document.querySelector("#team-member-count");
 const teamAssignedCount = document.querySelector("#team-assigned-count");
 
+// Раздел сделок
+const openDealModalButton = document.querySelector("#open-deal-modal-button");
+const dealModal = document.querySelector("#deal-modal");
+const closeDealModalButton = document.querySelector("#close-deal-modal-button");
+const cancelDealButton = document.querySelector("#cancel-deal-button");
+const dealForm = document.querySelector("#deal-form");
+
+const dealTitleInput = document.querySelector("#deal-title");
+const dealClientInput = document.querySelector("#deal-client");
+const dealAmountInput = document.querySelector("#deal-amount");
+const dealStageInput = document.querySelector("#deal-stage");
+const dealResponsibleInput = document.querySelector("#deal-responsible");
+const dealNoteInput = document.querySelector("#deal-note");
+const dealModalTitle = document.querySelector("#deal-modal-title");
+const dealModalSubtitle = document.querySelector("#deal-modal-subtitle");
+const dealSubmitButton = document.querySelector("#deal-submit-button");
+
+const dealSearchInput = document.querySelector("#deal-search-input");
+const dealResponsibleFilter = document.querySelector("#deal-responsible-filter");
+const dealsBoard = document.querySelector("#deals-board");
+
+const dealTotalCount = document.querySelector("#deal-total-count");
+const dealPipelineAmount = document.querySelector("#deal-pipeline-amount");
+const dealWonAmount = document.querySelector("#deal-won-amount");
+const dealLostCount = document.querySelector("#deal-lost-count");
+
 // Состояние приложения
 let authMode = "login";
 let activePriority = "all";
@@ -86,7 +118,10 @@ let currentWorkspace = null;
 let currentProject = null;
 let clients = [];
 let workspaceMembers = [];
+let deals = [];
 let editingClientId = null;
+let editingDealId = null;
+let dashboardLoadPromise = null;
 
 /*
     localStorage - это маленькое хранилище в браузере.
@@ -238,6 +273,18 @@ function normalizeList(data) {
 
     return [];
 }
+
+function debounce(callback, delay = 180) {
+    let timeoutId = null;
+
+    return function (...args) {
+        clearTimeout(timeoutId);
+
+        timeoutId = setTimeout(function () {
+            callback(...args);
+        }, delay);
+    };
+}
 // -------------------- THEME --------------------
 
 function getSavedTheme() {
@@ -349,14 +396,34 @@ async function checkAuthOnStart() {
 // -------------------- WORKSPACE / PROJECT --------------------
 
 async function loadDashboardData() {
-    currentWorkspace = await getOrCreateWorkspace();
-    currentProject = await getOrCreateProject(currentWorkspace.id);
+    if (dashboardLoadPromise) {
+        return dashboardLoadPromise;
+    }
 
-    workspaceContext.innerText = `${currentWorkspace.name} · ${currentProject.name}`;
+    dashboardLoadPromise = (async function () {
+        currentWorkspace = await getOrCreateWorkspace();
+        currentProject = await getOrCreateProject(currentWorkspace.id);
 
-    await loadTasks();
-    await loadWorkspaceMembers();
-    await loadClientsFromApi();
+        workspaceContext.innerText = `${currentWorkspace.name} · ${currentProject.name}`;
+
+        await Promise.all([
+            loadTasks(),
+            loadWorkspaceMembers(false),
+            loadClientsFromApi(false),
+            loadDealsFromApi(false),
+        ]);
+
+        refreshResponsibleControls();
+        renderClients();
+        renderDeals();
+        renderTeam();
+    })();
+
+    try {
+        await dashboardLoadPromise;
+    } finally {
+        dashboardLoadPromise = null;
+    }
 }
 
 async function getOrCreateWorkspace() {
@@ -788,12 +855,39 @@ function refreshResponsibleControls() {
             ? selectedValue
             : "all";
     }
+
+    if (dealResponsibleInput) {
+        const selectedValue = dealResponsibleInput.value || "";
+        dealResponsibleInput.innerHTML = buildResponsibleOptions(
+            parseResponsibleId(selectedValue),
+            "form"
+        );
+    }
+
+    if (dealResponsibleFilter) {
+        const selectedValue = dealResponsibleFilter.value || "all";
+        dealResponsibleFilter.innerHTML = buildResponsibleOptions(null, "filter");
+
+        const hasSelectedOption = Array.from(dealResponsibleFilter.options)
+            .some(function (option) {
+                return option.value === selectedValue;
+            });
+
+        dealResponsibleFilter.value = hasSelectedOption
+            ? selectedValue
+            : "all";
+    }
 }
 
-async function loadWorkspaceMembers() {
+async function loadWorkspaceMembers(shouldRender = true) {
     if (!currentWorkspace) {
         workspaceMembers = [];
-        refreshResponsibleControls();
+
+        if (shouldRender) {
+            refreshResponsibleControls();
+            renderTeam();
+        }
+
         return;
     }
 
@@ -814,8 +908,12 @@ async function loadWorkspaceMembers() {
                 .localeCompare(getWorkspaceMemberLabel(secondMember), "ru");
         });
 
-    refreshResponsibleControls();
-    renderTeam();
+    if (shouldRender) {
+        refreshResponsibleControls();
+        renderClients();
+        renderDeals();
+        renderTeam();
+    }
 }
 
 function normalizeClientStatusForApi(status) {
@@ -860,10 +958,16 @@ function normalizeClientFromApi(client) {
     };
 }
 
-async function loadClientsFromApi() {
+async function loadClientsFromApi(shouldRender = true) {
     if (!currentWorkspace) {
         clients = [];
-        renderClients();
+
+        if (shouldRender) {
+            renderClients();
+            renderTeam();
+            renderDeals();
+        }
+
         return;
     }
 
@@ -879,7 +983,11 @@ async function loadClientsFromApi() {
         return normalizeClientFromApi(client);
     });
 
-    renderClients();
+    if (shouldRender) {
+        renderClients();
+        renderTeam();
+        renderDeals();
+    }
 }
 
 function openClientModal(client = null) {
@@ -994,6 +1102,8 @@ async function createClientFromForm() {
 
     clients.unshift(normalizeClientFromApi(createdClient));
     renderClients();
+    renderTeam();
+    renderDeals();
 }
 
 async function updateClientFromForm(clientId) {
@@ -1023,6 +1133,8 @@ async function updateClientFromForm(clientId) {
     });
 
     renderClients();
+    renderTeam();
+    renderDeals();
 }
 
 async function updateClientStatus(clientId, status) {
@@ -1073,6 +1185,7 @@ async function updateClientResponsible(clientId, responsibleId) {
     });
 
     renderClients();
+    renderTeam();
 }
 
 async function deleteClient(clientId) {
@@ -1092,6 +1205,8 @@ async function deleteClient(clientId) {
     });
 
     renderClients();
+    renderTeam();
+    renderDeals();
 }
 
 function renderClients() {
@@ -1245,7 +1360,6 @@ function renderClients() {
 
     updateClientStats();
     bindClientActionButtons();
-    renderTeam();
 }
 
 function bindClientActionButtons() {
@@ -1311,6 +1425,588 @@ function bindClientActionButtons() {
                 await deleteClient(clientId);
             } catch (error) {
                 alert(error.message);
+            }
+        });
+    });
+}
+
+
+// -------------------- DEALS --------------------
+
+const DEAL_STAGES = [
+    "new",
+    "negotiation",
+    "proposal",
+    "payment",
+    "won",
+    "lost",
+];
+
+function normalizeDealFromApi(deal) {
+    return {
+        id: deal.id,
+        workspaceId: deal.workspace_id,
+        clientId: deal.client_id,
+        title: deal.title,
+        amount: Number(deal.amount || 0),
+        stage: deal.stage || "new",
+        responsibleId: deal.responsible_id,
+        note: deal.note,
+        createdById: deal.created_by_id,
+        createdAt: deal.created_at,
+        updatedAt: deal.updated_at,
+    };
+}
+
+function getDealStageLabel(stage) {
+    if (stage === "new") {
+        return "Новая заявка";
+    }
+
+    if (stage === "negotiation") {
+        return "Переговоры";
+    }
+
+    if (stage === "proposal") {
+        return "Предложение";
+    }
+
+    if (stage === "payment") {
+        return "Оплата";
+    }
+
+    if (stage === "won") {
+        return "Успешно";
+    }
+
+    if (stage === "lost") {
+        return "Проиграно";
+    }
+
+    return stage || "Новая заявка";
+}
+
+function getClientById(clientId) {
+    if (clientId === null || clientId === undefined) {
+        return null;
+    }
+
+    return clients.find(function (client) {
+        return client.id === Number(clientId);
+    }) || null;
+}
+
+function getDealClientLabel(clientId) {
+    const client = getClientById(clientId);
+
+    if (!client) {
+        return "Без клиента";
+    }
+
+    return client.company
+        ? `${client.fullName} · ${client.company}`
+        : client.fullName;
+}
+
+function buildDealClientOptions(selectedClientId = null) {
+    const selectedValue = selectedClientId === null || selectedClientId === undefined
+        ? ""
+        : String(selectedClientId);
+
+    let options = `<option value="" ${selectedValue === "" ? "selected" : ""}>Без клиента</option>`;
+
+    options += clients
+        .map(function (client) {
+            const value = String(client.id);
+            const selected = value === selectedValue ? "selected" : "";
+            const label = client.company
+                ? `${client.fullName} · ${client.company}`
+                : client.fullName;
+
+            return `<option value="${value}" ${selected}>${escapeHtml(label)}</option>`;
+        })
+        .join("");
+
+    return options;
+}
+
+function parseOptionalPositiveId(value) {
+    if (value === "" || value === null || value === undefined) {
+        return null;
+    }
+
+    const parsedValue = Number(value);
+
+    return Number.isInteger(parsedValue) && parsedValue > 0
+        ? parsedValue
+        : null;
+}
+
+function formatMoney(value) {
+    const amount = Number(value || 0);
+
+    return RUB_FORMATTER.format(
+        Number.isFinite(amount)
+            ? amount
+            : 0
+    );
+}
+
+async function loadDealsFromApi(shouldRender = true) {
+    if (!currentWorkspace) {
+        deals = [];
+
+        if (shouldRender) {
+            renderDeals();
+        }
+
+        return;
+    }
+
+    const data = await requestJson(
+        `${API_URL}/deals?workspace_id=${currentWorkspace.id}&limit=100&sort_by=created_at&sort_order=desc`,
+        {
+            method: "GET",
+            headers: getAuthHeaders(),
+        }
+    );
+
+    deals = normalizeList(data).map(function (deal) {
+        return normalizeDealFromApi(deal);
+    });
+
+    if (shouldRender) {
+        renderDeals();
+    }
+}
+
+function openDealModal(deal = null, initialStage = "new") {
+    if (!dealModal || !dealForm) {
+        return;
+    }
+
+    dealForm.reset();
+    dealClientInput.innerHTML = buildDealClientOptions(
+        deal ? deal.clientId : null
+    );
+    dealResponsibleInput.innerHTML = buildResponsibleOptions(
+        deal ? deal.responsibleId : null,
+        "form"
+    );
+
+    if (deal) {
+        editingDealId = deal.id;
+
+        dealModalTitle.innerText = "Изменить сделку";
+        dealModalSubtitle.innerText = "Обновите данные сделки и сохраните изменения";
+        dealSubmitButton.innerText = "Сохранить изменения";
+
+        dealTitleInput.value = deal.title || "";
+        dealClientInput.value = deal.clientId === null
+            ? ""
+            : String(deal.clientId);
+        dealAmountInput.value = String(deal.amount || 0);
+        dealStageInput.value = deal.stage || "new";
+        dealResponsibleInput.value = deal.responsibleId === null
+            ? ""
+            : String(deal.responsibleId);
+        dealNoteInput.value = deal.note || "";
+    } else {
+        editingDealId = null;
+
+        dealModalTitle.innerText = "Добавить сделку";
+        dealModalSubtitle.innerText = "Заполните данные сделки и выберите этап воронки";
+        dealSubmitButton.innerText = "Сохранить сделку";
+
+        dealClientInput.value = "";
+        dealAmountInput.value = "0";
+        dealStageInput.value = DEAL_STAGES.includes(initialStage)
+            ? initialStage
+            : "new";
+        dealResponsibleInput.value = "";
+        dealNoteInput.value = "";
+    }
+
+    dealModal.classList.remove("hidden");
+    dealTitleInput.focus();
+}
+
+function closeDealModal() {
+    if (!dealModal || !dealForm) {
+        return;
+    }
+
+    dealModal.classList.add("hidden");
+    dealForm.reset();
+    editingDealId = null;
+
+    dealModalTitle.innerText = "Добавить сделку";
+    dealModalSubtitle.innerText = "Заполните данные сделки и выберите этап воронки";
+    dealSubmitButton.innerText = "Сохранить сделку";
+}
+
+async function createDealFromForm() {
+    if (!currentWorkspace) {
+        alert("Рабочее пространство ещё не загружено");
+        return;
+    }
+
+    const createdDeal = await requestJson(`${API_URL}/deals`, {
+        method: "POST",
+        headers: getJsonAuthHeaders(),
+        body: JSON.stringify({
+            workspace_id: currentWorkspace.id,
+            client_id: parseOptionalPositiveId(dealClientInput.value),
+            title: dealTitleInput.value.trim(),
+            amount: dealAmountInput.value || "0",
+            stage: dealStageInput.value,
+            responsible_id: parseResponsibleId(dealResponsibleInput.value),
+            note: dealNoteInput.value.trim() || null,
+        }),
+    });
+
+    deals.unshift(normalizeDealFromApi(createdDeal));
+    renderDeals();
+}
+
+async function updateDealFromForm(dealId) {
+    const updatedDeal = await requestJson(`${API_URL}/deals/${dealId}`, {
+        method: "PATCH",
+        headers: getJsonAuthHeaders(),
+        body: JSON.stringify({
+            client_id: parseOptionalPositiveId(dealClientInput.value),
+            title: dealTitleInput.value.trim(),
+            amount: dealAmountInput.value || "0",
+            stage: dealStageInput.value,
+            responsible_id: parseResponsibleId(dealResponsibleInput.value),
+            note: dealNoteInput.value.trim() || null,
+        }),
+    });
+
+    const normalizedDeal = normalizeDealFromApi(updatedDeal);
+
+    deals = deals.map(function (deal) {
+        return deal.id === dealId
+            ? normalizedDeal
+            : deal;
+    });
+
+    renderDeals();
+}
+
+async function updateDealStage(dealId, stage) {
+    const updatedDeal = await requestJson(
+        `${API_URL}/deals/${dealId}/stage`,
+        {
+            method: "PATCH",
+            headers: getJsonAuthHeaders(),
+            body: JSON.stringify({
+                stage: stage,
+            }),
+        }
+    );
+
+    const normalizedDeal = normalizeDealFromApi(updatedDeal);
+
+    deals = deals.map(function (deal) {
+        return deal.id === dealId
+            ? normalizedDeal
+            : deal;
+    });
+
+    renderDeals();
+}
+
+async function updateDealResponsible(dealId, responsibleId) {
+    const updatedDeal = await requestJson(
+        `${API_URL}/deals/${dealId}/responsible`,
+        {
+            method: "PATCH",
+            headers: getJsonAuthHeaders(),
+            body: JSON.stringify({
+                responsible_id: responsibleId,
+            }),
+        }
+    );
+
+    const normalizedDeal = normalizeDealFromApi(updatedDeal);
+
+    deals = deals.map(function (deal) {
+        return deal.id === dealId
+            ? normalizedDeal
+            : deal;
+    });
+
+    renderDeals();
+}
+
+async function deleteDeal(dealId) {
+    const confirmed = confirm("Удалить сделку? Это действие нельзя отменить.");
+
+    if (!confirmed) {
+        return;
+    }
+
+    await requestJson(`${API_URL}/deals/${dealId}`, {
+        method: "DELETE",
+        headers: getAuthHeaders(),
+    });
+
+    deals = deals.filter(function (deal) {
+        return deal.id !== dealId;
+    });
+
+    renderDeals();
+}
+
+function updateDealStats() {
+    const total = deals.length;
+
+    const pipelineAmount = deals
+        .filter(function (deal) {
+            return !["won", "lost"].includes(deal.stage);
+        })
+        .reduce(function (sum, deal) {
+            return sum + Number(deal.amount || 0);
+        }, 0);
+
+    const wonAmount = deals
+        .filter(function (deal) {
+            return deal.stage === "won";
+        })
+        .reduce(function (sum, deal) {
+            return sum + Number(deal.amount || 0);
+        }, 0);
+
+    const lost = deals.filter(function (deal) {
+        return deal.stage === "lost";
+    }).length;
+
+    if (dealTotalCount) {
+        dealTotalCount.innerText = total;
+    }
+
+    if (dealPipelineAmount) {
+        dealPipelineAmount.innerText = formatMoney(pipelineAmount);
+    }
+
+    if (dealWonAmount) {
+        dealWonAmount.innerText = formatMoney(wonAmount);
+    }
+
+    if (dealLostCount) {
+        dealLostCount.innerText = lost;
+    }
+}
+
+function renderDeals() {
+    updateDealStats();
+
+    if (!dealsBoard) {
+        return;
+    }
+
+    const searchValue = dealSearchInput
+        ? dealSearchInput.value.toLowerCase().trim()
+        : "";
+
+    const responsibleValue = dealResponsibleFilter
+        ? dealResponsibleFilter.value
+        : "all";
+
+    const filteredDeals = deals.filter(function (deal) {
+        const dealText = [
+            deal.title,
+            deal.note,
+            getDealClientLabel(deal.clientId),
+            getResponsibleLabel(deal.responsibleId),
+            getDealStageLabel(deal.stage),
+        ].join(" ").toLowerCase();
+
+        const matchesSearch = dealText.includes(searchValue);
+
+        let matchesResponsible = true;
+
+        if (responsibleValue === "unassigned") {
+            matchesResponsible = deal.responsibleId === null;
+        } else if (responsibleValue !== "all") {
+            matchesResponsible = deal.responsibleId === Number(responsibleValue);
+        }
+
+        return matchesSearch && matchesResponsible;
+    });
+
+    const dealsByStage = {};
+
+    DEAL_STAGES.forEach(function (stage) {
+        dealsByStage[stage] = [];
+    });
+
+    filteredDeals.forEach(function (deal) {
+        if (dealsByStage[deal.stage]) {
+            dealsByStage[deal.stage].push(deal);
+        }
+    });
+
+    DEAL_STAGES.forEach(function (stage) {
+        const list = document.querySelector(`[data-deal-list="${stage}"]`);
+        const counter = document.querySelector(`[data-deal-counter="${stage}"]`);
+
+        if (!list) {
+            return;
+        }
+
+        const stageDeals = dealsByStage[stage];
+
+        if (counter) {
+            counter.innerText = stageDeals.length;
+        }
+
+        if (stageDeals.length === 0) {
+            list.innerHTML = `
+                <div class="deal-column-empty">
+                    Нет сделок
+                </div>
+            `;
+            return;
+        }
+
+        list.innerHTML = stageDeals
+            .map(function (deal) {
+                const clientLabel = getDealClientLabel(deal.clientId);
+                const responsibleLabel = getResponsibleLabel(deal.responsibleId);
+
+                return `
+                    <article class="deal-card md-animate-in" data-deal-id="${deal.id}">
+                        <div class="deal-card-top">
+                            <span class="deal-card-id">#${deal.id}</span>
+                            <strong>${escapeHtml(formatMoney(deal.amount))}</strong>
+                        </div>
+
+                        <h4>${escapeHtml(deal.title)}</h4>
+
+                        <div class="deal-card-meta">
+                            <span>Клиент</span>
+                            <strong>${escapeHtml(clientLabel)}</strong>
+                        </div>
+
+                        <label class="deal-card-control">
+                            <span>Этап</span>
+                            <select
+                                class="deal-stage-select deal-stage-select--${deal.stage}"
+                                data-deal-id="${deal.id}"
+                            >
+                                <option value="new" ${deal.stage === "new" ? "selected" : ""}>Новая заявка</option>
+                                <option value="negotiation" ${deal.stage === "negotiation" ? "selected" : ""}>Переговоры</option>
+                                <option value="proposal" ${deal.stage === "proposal" ? "selected" : ""}>Предложение</option>
+                                <option value="payment" ${deal.stage === "payment" ? "selected" : ""}>Оплата</option>
+                                <option value="won" ${deal.stage === "won" ? "selected" : ""}>Успешно</option>
+                                <option value="lost" ${deal.stage === "lost" ? "selected" : ""}>Проиграно</option>
+                            </select>
+                        </label>
+
+                        <label class="deal-card-control">
+                            <span>Ответственный</span>
+                            <select
+                                class="deal-responsible-select"
+                                data-deal-id="${deal.id}"
+                                title="${escapeHtml(responsibleLabel)}"
+                            >
+                                ${buildResponsibleOptions(deal.responsibleId, "form")}
+                            </select>
+                        </label>
+
+                        <p>${escapeHtml(deal.note || "Заметка не добавлена")}</p>
+
+                        <div class="deal-card-actions">
+                            <button
+                                class="ghost-button deal-edit-button"
+                                type="button"
+                                data-deal-id="${deal.id}"
+                            >
+                                Изменить
+                            </button>
+
+                            <button
+                                class="ghost-button deal-delete-button"
+                                type="button"
+                                data-deal-id="${deal.id}"
+                            >
+                                Удалить
+                            </button>
+                        </div>
+                    </article>
+                `;
+            })
+            .join("");
+    });
+
+    bindDealActionButtons();
+}
+
+function bindDealActionButtons() {
+    const editButtons = document.querySelectorAll(".deal-edit-button");
+    const deleteButtons = document.querySelectorAll(".deal-delete-button");
+    const stageSelects = document.querySelectorAll(".deal-stage-select");
+    const responsibleSelects = document.querySelectorAll(".deal-responsible-select");
+
+    editButtons.forEach(function (button) {
+        button.addEventListener("click", function () {
+            const dealId = Number(button.dataset.dealId);
+
+            const deal = deals.find(function (item) {
+                return item.id === dealId;
+            });
+
+            if (!deal) {
+                alert("Сделка не найдена");
+                return;
+            }
+
+            openDealModal(deal);
+        });
+    });
+
+    deleteButtons.forEach(function (button) {
+        button.addEventListener("click", async function () {
+            const dealId = Number(button.dataset.dealId);
+
+            try {
+                await deleteDeal(dealId);
+            } catch (error) {
+                alert(error.message);
+            }
+        });
+    });
+
+    stageSelects.forEach(function (select) {
+        select.addEventListener("change", async function () {
+            const dealId = Number(select.dataset.dealId);
+            const stage = select.value;
+
+            select.disabled = true;
+
+            try {
+                await updateDealStage(dealId, stage);
+            } catch (error) {
+                alert(error.message);
+                await loadDealsFromApi();
+            }
+        });
+    });
+
+    responsibleSelects.forEach(function (select) {
+        select.addEventListener("change", async function () {
+            const dealId = Number(select.dataset.dealId);
+            const responsibleId = parseResponsibleId(select.value);
+
+            select.disabled = true;
+
+            try {
+                await updateDealResponsible(dealId, responsibleId);
+            } catch (error) {
+                alert(error.message);
+                await loadDealsFromApi();
             }
         });
     });
@@ -1500,6 +2196,11 @@ function updateClientStats() {
     }
 }
 
+const debouncedTaskSearch = debounce(filterTasks);
+const debouncedClientSearch = debounce(renderClients);
+const debouncedTeamSearch = debounce(renderTeam);
+const debouncedDealSearch = debounce(renderDeals);
+
 // -------------------- EVENTS --------------------
 
 loginTab.addEventListener("click", function () {
@@ -1532,6 +2233,7 @@ logoutButton.addEventListener("click", function () {
     currentProject = null;
     clients = [];
     workspaceMembers = [];
+    deals = [];
     clearTaskCards();
     showAuthScreen();
 });
@@ -1586,7 +2288,7 @@ taskForm.addEventListener("submit", async function (event) {
 });
 
 searchInput.addEventListener("input", function () {
-    filterTasks();
+    debouncedTaskSearch();
 });
 
 filterButtons.forEach(function (button) {
@@ -1690,7 +2392,7 @@ if (clientForm) {
 
 if (clientSearchInput) {
     clientSearchInput.addEventListener("input", function () {
-        renderClients();
+        debouncedClientSearch();
     });
 }
 
@@ -1708,13 +2410,75 @@ if (clientResponsibleFilter) {
 
 if (teamSearchInput) {
     teamSearchInput.addEventListener("input", function () {
-        renderTeam();
+        debouncedTeamSearch();
     });
 }
 
 if (teamRoleFilter) {
     teamRoleFilter.addEventListener("change", function () {
         renderTeam();
+    });
+}
+
+if (openDealModalButton) {
+    openDealModalButton.addEventListener("click", function () {
+        openDealModal();
+    });
+}
+
+document.querySelectorAll(".deal-add-button").forEach(function (button) {
+    button.addEventListener("click", function () {
+        openDealModal(null, button.dataset.dealStage || "new");
+    });
+});
+
+if (closeDealModalButton) {
+    closeDealModalButton.addEventListener("click", function () {
+        closeDealModal();
+    });
+}
+
+if (cancelDealButton) {
+    cancelDealButton.addEventListener("click", function () {
+        closeDealModal();
+    });
+}
+
+if (dealModal) {
+    dealModal.addEventListener("click", function (event) {
+        if (event.target === dealModal) {
+            closeDealModal();
+        }
+    });
+}
+
+if (dealForm) {
+    dealForm.addEventListener("submit", async function (event) {
+        event.preventDefault();
+
+        try {
+            if (editingDealId === null) {
+                await createDealFromForm();
+            } else {
+                await updateDealFromForm(editingDealId);
+            }
+
+            closeDealModal();
+        } catch (error) {
+            alert(error.message);
+        }
+    });
+}
+
+if (dealSearchInput) {
+    dealSearchInput.addEventListener("input", function () {
+        debouncedDealSearch();
+    });
+}
+
+if (dealResponsibleFilter) {
+    dealResponsibleFilter.addEventListener("change", function () {
+        renderDeals();
     });
 }
 
@@ -1726,5 +2490,7 @@ setAuthMode("login");
 updateColumnCounters();
 updateStats();
 updateClientStats();
+updateDealStats();
 renderTeam();
+renderDeals();
 checkAuthOnStart();
